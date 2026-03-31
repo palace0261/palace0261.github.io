@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>접근성 강화 — MyStudio</title>
+  <link rel="stylesheet" href="/common.css">
+</head>
+<body>
+  <div id="shared-nav-placeholder"></div>
+  <main class="container">
+    <h1>접근성 강화</h1>
+    <p>시맨틱 마크업, ARIA, 키보드 네비게이션과 명확한 포커스 스타일로 모두가 이용할 수 있는 UI를 제공합니다.</p>
+
+    <section>
+      <h2>핵심 원칙</h2>
+      <ul>
+        <li>명확한 문서 구조와 시맨틱 태그 사용</li>
+        <li>키보드만으로 모든 기능 사용 가능</li>
+        <li>색 대비와 폰트 크기 가독성 보장</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>예시 코드</h2>
+      <pre><code>&lt;button aria-label="닫기"&gt;✕&lt;/button&gt;</code></pre>
+    </section>
+  </main>
+  <footer class="footer">© 2026 MyStudio — Crafted with care</footer>
+  <script>
+    fetch('/nav.html').then(r=>r.text()).then(html=>{ document.getElementById('shared-nav-placeholder').innerHTML = html; }).catch(()=>{});
+  </script>
+</body>
+</html>

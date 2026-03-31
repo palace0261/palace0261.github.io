@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>국제화(i18n) — MyStudio</title>
+  <link rel="stylesheet" href="/common.css">
+</head>
+<body>
+  <div id="shared-nav-placeholder"></div>
+  <main class="container">
+    <h1>국제화(i18n)</h1>
+    <p>다국어 지원 및 지역별 날짜/숫자/통화 포맷을 고려한 설계와 문자열 관리 방법을 제안합니다.</p>
+
+    <section>
+      <h2>지원 전략</h2>
+      <ol>
+        <li>리소스 번들 사용</li>
+        <li>문장 단위 번역과 변수 치환</li>
+        <li>지역별 포맷 테스트</li>
+      </ol>
+    </section>
+  </main>
+  <footer class="footer">© 2026 MyStudio — Crafted with care</footer>
+  <script>
+    fetch('/nav.html').then(r=>r.text()).then(html=>{ document.getElementById('shared-nav-placeholder').innerHTML = html; }).catch(()=>{});
+  </script>
+</body>
+</html>
