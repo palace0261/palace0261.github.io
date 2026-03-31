@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>모든 화면에서 반응형 — MyStudio</title>
+  <link rel="stylesheet" href="/common.css">
+</head>
+<body>
+  <div id="shared-nav-placeholder"></div>
+
+  <main class="container">
+    <h1>모든 화면에서 반응형</h1>
+    <img class="detail-img" src="https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1200&q=80" alt="반응형" />
+    <p>유연한 레이아웃과 유닛 기반 크기를 활용해 모든 기기에서 최적의 인터페이스를 제공합니다.</p>
+    <p>더 많은 사례와 설명을 이곳에 추가하실 수 있습니다.</p>
+  </main>
+
+  <script>
+    fetch('/nav.html').then(r=>r.text()).then(html=>{
+      document.getElementById('shared-nav-placeholder').innerHTML = html;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = '<a href="/" class="btn">돌아가기</a>';
+      const nav = document.querySelector('#shared-nav-placeholder .nav');
+      if(nav) nav.appendChild(wrapper);
+    }).catch(()=>{});
+  </script>
+  <footer class="footer">© 2026 MyStudio — Crafted with care</footer>
+</body>
+</html>
