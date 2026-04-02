@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTMX 예제 — Beam Projector</title>
+  <script src="https://unpkg.com/htmx.org@1.9.3"></script>
+  <link rel="stylesheet" href="../ct/cc/base.css">
+  <link rel="stylesheet" href="../ct/cc/index.css">
+</head>
+
+
+<body>
+
+  <nav>
+    <div>
+      <div>logo</div>
+      <div><ul>카테고리</ul></div>
+    </div>
+  </nav>
+
+  <section>
+    <h1>HTMX 예제a</h1>
+    <nav>
+      <!-- 버튼 클릭 시 about.php에서 HTML 조각을 받아 #content를 교체 -->
+      <!-- <button hx-get="about.php" hx-target="#content" hx-swap="innerHTML" hx-indicator="#spinner">About</button> -->
+      <!-- <button hx-get="about.php?mode=fragment" hx-target="#content" hx-swap="innerHTML" hx-indicator="#spinner">About (fragment)</button> -->
+      <span id="spinner">로딩 중…</span>
+    </nav>
+</section>
+
+<section>
+  <div id="content">
+    <h2>메인 페이지</h2>
+    <p>HTMX를 사용하면 전체 페이지를 다시 로딩하지 않고도 서버에서 HTML 조각을 받아 화면 일부를 교체할 수 있습니다.</p>
+  </div>
+
+  <a
+  href="pd/ab01.php" 
+  hx-get="pd/ab01.php"
+  hx-target="#content"
+  hx-swap="innerHTML"
+  hx-indicator="#spinner"
+  hx-push-url="true"
+  >
+    <button>제품 ㅁ보기</button>
+  </a>
+
+
+</section>
+
+<section style="margin-top:18px">
+  <h3>폼 전송 예제</h3>
+  <form hx-post="about.php" hx-target="#content" hx-swap="innerHTML" hx-indicator="#spinner">
+    <label>이름: <input type="text" name="name" required></label>
+    <button type="submit">전송</button>
+  </form>
+</section>
+
+</body>
+
+
+</html>
