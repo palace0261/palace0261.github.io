@@ -1,25 +1,105 @@
 <!DOCTYPE html>
 <html lang="ko">
 
+
+
 <head>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HTMX 예제 — Beam Projector</title>
+
+  <title>Beam Projector(HTMX)</title>
+  <meta name="description" content="HTMX를 활용한 웹 애플리케이션 예제입니다.">
+  <meta name="keywords" content="HTMX, 웹 개발, AJAX, HTML 조각, 인터랙티브 웹">
+  <meta name="author" content="CA">
+  <meta name="robots" content="index, follow">
+  <!-- <link rel="canonical" href="/"> 추후 입력 예정 -->
+
   <script src="https://unpkg.com/htmx.org@1.9.3"></script>
-  <link rel="stylesheet" href="../ct/cc/base.css">
-  <link rel="stylesheet" href="../ct/cc/index.css">
+
+  <link rel="stylesheet" href="cc/base.css">
+  <link rel="stylesheet" href="cc/index.css">
+  <link rel="stylesheet" href="cc/lo.css">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Swiper CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/swiper@9/swiper-bundle.min.css" />
+  <!-- Slider styles -->
+  <link rel="stylesheet" href="cc/slider.css">
+
 </head>
 
 
-<body>
+
+<body class="ca">
 
   <nav>
     <div>
-      <div>logo</div>
-      <div><ul>카테고리</ul></div>
+      <ol>
+        <a href="#"><i class="fas fa-home"></i>Ca Beam</a>
+      </ol>
+      <ol>
+      <a href="#"><ul><i class="fas fa-bars"></i>카테고리</ul></a>ㅣ
+        <a href="#"><i class="fas fa-shopping-cart"></i>장바구니</a>ㅣ
+        <a href="#"><i class="fas fa-user"></i>로그인</a>
+      </ol>
     </div>
   </nav>
 
+  <section class="hero-slider" id="sl0">
+    <div class="swiper mySwiper">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide">
+          <div class="slide-caption">제품 소개 문구 1 — 빔 프로젝터의 세계</div>
+          <p></p> <!--백그라운드 그라데이션-->
+          <img class="slide-image" src="img/main/001a.jpg" alt="Slide 1" id="sl1">
+        </div>
+        <div class="swiper-slide">
+          <img class="slide-image" src="img/main/002a.jpg" alt="Slide 2" id="sl2" >
+          <div class="slide-caption">제품 소개 문구 2 — 선명한 화질과 디자인</div>
+          <p></p> <!--백그라운드 그라데이션-->
+        </div>
+      </div>
+      <!-- pagination / navigation -->
+      <div class="swiper-pagination"></div>
+      <!-- 
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+      -->
+    </div>
+  </section>
+
+  <section>
+    <div class="cai">
+      <ul>
+        <li>
+          <img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%">
+          <span>중고 Beam</span>
+        </li>
+        <li><img src="img/main/011a.jpg" width="100%"></li>
+        <li><img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%"></li>
+        <li><img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%"></li>
+        <li><img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%"></li>
+        <li><img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%"></li>
+        <li><img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%"></li>
+        <li><img src="https://mediaserver.goepson.com/adaptivemedia/rendition?id=0c1b89b520567872e15820420a3215b1c449b89f&vid=0c1b89b520567872e15820420a3215b1c449b89f&prid=515Wx515H&clid=SAPDAM&prclid=productpictures&assetDescr=EF-62_N_960_640_03" width="100%"></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div>
+      <p>© 2024 Beam Projector. All rights reserved.</p>
+      <p>주소: 서울특별시 강남구 테헤란로 123, 이메일: info@beamprojector.com</p> 
+    </div>
+  </footer>
+
+  <!-- 임시 파일 -->
+  <div style="display: none;">
   <section>
     <h1>HTMX 예제a</h1>
     <nav>
@@ -57,6 +137,12 @@
     <button type="submit">전송</button>
   </form>
 </section>
+</div>
+
+<!-- Swiper JS -->
+<script src="https://unpkg.com/swiper@9/swiper-bundle.min.js"></script>
+<script src="js/cai-swiper.js"></script>
+<script src="js/slider.js"></script>
 
 </body>
 

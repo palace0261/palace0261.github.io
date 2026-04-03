@@ -1,0 +1,39 @@
+@charset "utf-8";
+/* index CSS 260403 */
+
+.ca > nav > div > ol{
+  /* flex */
+  display: flex;
+  gap: 1.0rem;
+  align-items: center;
+}
+.ca > nav > div > li > a{
+  color: var(--wt);
+  font-size: 1.0rem;
+}
+.ca > nav > div > li{
+  color: var(--gy);
+  font-size: 0.725rem;
+}
+.ca > nav{
+  background: var(--bk);
+  color: var(--wt);
+  border-bottom: 1px solid var(--gy);
+}
+.ca i{
+  padding-right: 0.5rem;
+}
+.ca > nav > div{
+  max-width: var(--mx);
+  display: flex;
+  align-items: center;
+  margin: 0 auto;
+  min-height: 3rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 1rem;
+}
+.ca footer > div{
+  max-width: var(--mx);
+  margin: 0 auto;
+}
