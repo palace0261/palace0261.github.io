@@ -51,6 +51,7 @@ body {
 }
 
 .game-header {
+    display: none; /* 임시 조치*/
     position: relative;
     text-align: center;
     padding: clamp(10px, 1.4vw, 18px) clamp(16px, 2.2vw, 28px);
@@ -773,7 +774,7 @@ body {
     }
 
     .card {
-        width: min(100%, 74px);
+        width: min(80%, 74px);
     }
 
     .card .card-suit {
