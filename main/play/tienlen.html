@@ -19,7 +19,7 @@
   <link rel="canonical" href="/">
   <link rel="icon" href="/" type="image/x-icon">
 
-  <title>Tiến Lên - 북부식 카드게임</title>
+  <title>Tiến Lên - 북부식 카드게임ㅁ</title>
 
   <!-- custum -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"> <!-- icon -->
@@ -158,8 +158,7 @@
 
     <!-- Center Play Area -->
     <div class="center-area">
-      <h3></h3>
-      <ul class="zqco">
+            <div class="zqco">
 
       <div class="last-play-list">
         <div id="playHistoryContainer">
@@ -173,12 +172,12 @@
       <p id="lastPlayer">by: -</p>
  
 
-      </ul>
+            </div>
       
     </div>
 
     <!-- Player Hand -->
-    <div class="player-hand" style="margin-bottom: calc(3rem + 20vw);">
+    <div class="player-hand">
       <h3>My Hand</h3>
       <div class="hand-cards" id="playerHand">
         <!-- Player cards will be inserted here -->
@@ -190,7 +189,7 @@
         </div>
         <!-- <button class="btn secondary" onclick="clearSelection()">선택 해제</button> -->
          <div>
-        <button class="btn primary" onclick="newGame()" style="background: hsl(217, 15%, 83%);">New Game</button>
+        <button class="btn neutral" onclick="newGame()">New Game</button>
         </div>
 
       </div>
@@ -216,8 +215,7 @@
         passCount: 0,
         playHistory: [], // 최근 플레이 히스토리 저장 (최대 4개)
         isFirstRound: true, // 첫 번째 라운드 여부
-        playerActive: [true, true, true, true], // true면 게임 중, false면 이미 우승으로 제외
-        hasPassed: [false, false, false, false] // 해당 라운드에서 패스했는지 (패스 잠금용)
+        playerActive: [true, true, true, true] // true면 게임 중, false면 이미 우승으로 제외
     };
 
     // Prevent multiple rapid new-game starts
@@ -228,6 +226,84 @@
     const values = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
     const valueOrder = { '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14, '2': 15 };
     const suitOrder = { '♠': 1, '♣': 2, '♦': 3, '♥': 4 };
+
+    // Lightweight SFX via Web Audio API
+    const sfxState = {
+        enabled: true,
+        context: null,
+        unlocked: false,
+        volume: 0.12
+    };
+
+    function ensureSfxContext() {
+        if (!sfxState.enabled) return null;
+        if (sfxState.context) return sfxState.context;
+
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) {
+            sfxState.enabled = false;
+            return null;
+        }
+
+        sfxState.context = new Ctx();
+        return sfxState.context;
+    }
+
+    async function unlockSfx() {
+        const ctx = ensureSfxContext();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') {
+            try {
+                await ctx.resume();
+            } catch (e) {
+                return;
+            }
+        }
+        sfxState.unlocked = true;
+    }
+
+    function playTone(freq, duration = 0.12, type = 'sine', gain = 1, when = 0) {
+        const ctx = ensureSfxContext();
+        if (!ctx || !sfxState.unlocked) return;
+
+        const now = ctx.currentTime + when;
+        const osc = ctx.createOscillator();
+        const amp = ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        amp.gain.setValueAtTime(0.0001, now);
+        amp.gain.exponentialRampToValueAtTime(sfxState.volume * gain, now + 0.01);
+        amp.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.connect(amp);
+        amp.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+    }
+
+    function playSfx(eventName) {
+        switch (eventName) {
+            case 'gameStart':
+                playTone(392, 0.09, 'triangle', 0.85, 0.00);
+                playTone(523, 0.10, 'triangle', 0.90, 0.10);
+                playTone(659, 0.14, 'triangle', 1.00, 0.21);
+                break;
+            case 'cardPlay':
+                playTone(320, 0.07, 'square', 0.55, 0.00);
+                playTone(440, 0.08, 'square', 0.60, 0.08);
+                break;
+            case 'turnEnd':
+                playTone(260, 0.08, 'sine', 0.55, 0.00);
+                break;
+            case 'myTurn':
+                playTone(660, 0.08, 'triangle', 0.75, 0.00);
+                playTone(880, 0.10, 'triangle', 0.85, 0.09);
+                break;
+            default:
+                break;
+        }
+    }
 
     // Initialize game
     function initGame() {
@@ -596,12 +672,6 @@
             return;
         }
 
-        // If player already passed in this trick, they cannot play until round clears
-        if (gameState.hasPassed[3] && gameState.lastPlay.length > 0) {
-            playBtn.disabled = true;
-            return;
-        }
-
         // 첫 번째 라운드이고 마지막 플레이가 없을 때만 3♠ 검증
         if (gameState.isFirstRound && gameState.lastPlay.length === 0) {
             const hasSpade3 = selectedCardObjects.some(card => 
@@ -901,6 +971,7 @@
         gameState.selectedCards = [];
         gameState.passCount = 0;
         gameState.isFirstRound = false; // 첫 번째 라운드 종료
+        playSfx('cardPlay');
         
         // 선택된 카드들의 selected 클래스 제거
         document.querySelectorAll('#playerHand .card.selected').forEach(card => {
@@ -937,22 +1008,34 @@
     }
 
     // Pass turn
-    function passturn() {
-        // mark passed for current player
-        gameState.hasPassed[gameState.currentPlayer] = true;
+    function passturn(isAiCall = false) {
+        // Player can pass only on their own turn. AI uses passturn(true).
+        if (!isAiCall && gameState.currentPlayer !== 3) {
+            return;
+        }
+
+        // Skip if current player is inactive
+        if (!gameState.playerActive[gameState.currentPlayer]) {
+            nextTurn();
+            return;
+        }
+
         gameState.passCount++;
+
+        // Round resets when every other active player passed.
+        const activePlayerCount = gameState.playerActive.filter(Boolean).length;
+        const requiredPasses = Math.max(activePlayerCount - 1, 1);
 
         // Show pass indicator near the player who passed
         showPassIndicator(gameState.currentPlayer);
         
         // If all players pass, clear the table and return to last player
-        if (gameState.passCount >= 3) {
+        if (gameState.passCount >= requiredPasses) {
+            playSfx('turnEnd');
             setTimeout(() => {
                 gameState.lastPlay = [];
                 gameState.lastPlayCombo = null;
                 gameState.passCount = 0;
-                // reset pass locks when round clears
-                gameState.hasPassed = [false, false, false, false];
 
                 // Set current player to the one who played the last cards
                 gameState.currentPlayer = gameState.lastPlayer;
@@ -978,6 +1061,8 @@
 
     // Next turn
     function nextTurn() {
+        const prevPlayer = gameState.currentPlayer;
+
         // advance to next active player
         let next = gameState.currentPlayer;
         for (let i = 0; i < 4; i++) {
@@ -986,6 +1071,14 @@
                 gameState.currentPlayer = next;
                 break;
             }
+        }
+
+        if (gameState.currentPlayer !== prevPlayer) {
+            playSfx('turnEnd');
+        }
+
+        if (gameState.currentPlayer === 3) {
+            playSfx('myTurn');
         }
         
         updateActivePlayer();
@@ -1034,6 +1127,7 @@
             gameState.lastPlayer = gameState.currentPlayer;
             gameState.passCount = 0;
             gameState.isFirstRound = false; // 첫 번째 라운드 종료
+            playSfx('cardPlay');
 
             // 플레이 히스토리에 추가
             addToPlayHistory(playedCards, gameState.currentPlayer);
@@ -1053,7 +1147,6 @@
                         gameState.playerActive[winner] = false;
                         gameState.players[winner] = [];
                         gameState.passCount = 0;
-                        gameState.hasPassed[winner] = false;
                         // Continue with next active player
                         setTimeout(() => {
                             renderGame();
@@ -1071,8 +1164,8 @@
                 }
             });
         } else {
-            // AI passes -> reuse passturn() which handles hasPassed and passCount
-            passturn();
+            // AI passes
+            passturn(true);
             return;
         }
     }
@@ -1502,13 +1595,6 @@
             }
         }
 
-        // If this player previously passed during the trick, auto-pass until round clears
-        if (gameState.lastPlay.length > 0 && gameState.hasPassed[gameState.currentPlayer]) {
-            // small delay so UI updates first
-            setTimeout(() => {
-                passturn();
-            }, 500);
-        }
     }
 
     // Update card counts
@@ -1625,8 +1711,7 @@
             passCount: 0,
             playHistory: [],
             isFirstRound: true,
-            playerActive: [true, true, true, true],
-            hasPassed: [false, false, false, false]
+            playerActive: [true, true, true, true]
         };
         
         // 바로 게임 시작
@@ -1635,6 +1720,8 @@
 
     // Game start countdown function (temporarily disabled)
     async function startGameCountdown() {
+        await unlockSfx();
+
         const startScreen = document.getElementById('gameStartScreen');
         const countdownScreen = document.getElementById('countdownScreen');
         const gameBoard = document.getElementById('gameBoard');
@@ -1680,6 +1767,7 @@
 
         // Initialize game after dealing
         initGame();
+        playSfx('gameStart');
 
         // After initialization, hide countdown and show board
         if (countdownScreen) countdownScreen.style.display = 'none';
@@ -1688,7 +1776,7 @@
         // Show game info
         const gameInfo = document.querySelector('.game-info');
         if (gameInfo) {
-            gameInfo.style.display = 'block';
+            gameInfo.style.display = 'grid';
         }
         
         // 모바일 터치 지원 재적용
