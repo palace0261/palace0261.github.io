@@ -141,6 +141,59 @@ body {
     align-items: center;
 }
 
+.start-content {
+    width: min(92vw, 460px);
+    padding: 18px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: linear-gradient(155deg, rgba(8, 26, 44, 0.9), rgba(7, 20, 35, 0.86));
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+}
+
+.difficulty-select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.difficulty-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.difficulty-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.difficulty-btn {
+    min-height: 42px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.difficulty-btn.active {
+    background: linear-gradient(145deg, #4cc9f0, #2796bb);
+    border-color: rgba(255, 255, 255, 0.45);
+    color: #092030;
+}
+
+.difficulty-description {
+    margin-top: 8px;
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
 .start-game-btn {
     font-size: 1.3rem;
     padding: 1rem 2rem;
@@ -756,6 +809,15 @@ body {
 }
 
 @media (max-width: 520px) {
+    .start-content {
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .difficulty-select {
+        padding: 10px;
+    }
+
     .game-header {
         padding: 8px 12px;
     }

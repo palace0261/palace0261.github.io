@@ -126,6 +126,14 @@
   <!-- Game Start Screen -->
   <div id="gameStartScreen" class="game-start-screen">
     <div class="start-content">
+            <div class="difficulty-select" aria-label="난이도 선택">
+                <p class="difficulty-title">난이도 선택</p>
+                <div class="difficulty-options">
+                    <button id="difficultyEasy" class="btn difficulty-btn active" onclick="setDifficulty('easy')">쉬움</button>
+                    <button id="difficultyMedium" class="btn difficulty-btn" onclick="setDifficulty('medium')">보통</button>
+                </div>
+                <p id="difficultyDescription" class="difficulty-description">현재: 쉬움 - 기본 AI 난이도</p>
+            </div>
       <button class="btn primary start-game-btn"
       style="font-size:calc(1.5rem - 0.25em); padding: 1.5rem 3rem;" 
       onclick="startGameCountdown()">Start Game</button>
@@ -227,6 +235,25 @@
     const values = ['3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A', '2'];
     const valueOrder = { '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14, '2': 15 };
     const suitOrder = { '♠': 1, '♣': 2, '♦': 3, '♥': 4 };
+    let gameDifficulty = 'easy';
+
+    function setDifficulty(level) {
+        const normalized = level === 'medium' ? 'medium' : 'easy';
+        gameDifficulty = normalized;
+
+        const easyBtn = document.getElementById('difficultyEasy');
+        const mediumBtn = document.getElementById('difficultyMedium');
+        const description = document.getElementById('difficultyDescription');
+
+        if (easyBtn) easyBtn.classList.toggle('active', normalized === 'easy');
+        if (mediumBtn) mediumBtn.classList.toggle('active', normalized === 'medium');
+
+        if (description) {
+            description.textContent = normalized === 'medium'
+                ? '현재: 보통 - 고카드(A/2)와 강한 페어를 조금 더 아껴서 플레이'
+                : '현재: 쉬움 - 기본 AI 난이도';
+        }
+    }
 
     // Lightweight SFX via Web Audio API
     const sfxState = {
@@ -1352,17 +1379,51 @@
         if (possibleCombos.length === 0) {
             return [0]; // 최악의 경우 첫 번째 카드
         }
+
+        let candidateCombos = possibleCombos;
+
+        if (gameDifficulty === 'medium') {
+            const conservativeCombos = possibleCombos.filter(item => {
+                const combo = item.combo;
+                if (!combo || !combo.valid) return false;
+
+                // Keep game from becoming too hard: only preserve high cards in early-mid hand sizes.
+                if (hand.length <= 5) return true;
+
+                // In medium mode, avoid spending A/2 as opening singles if alternatives exist.
+                if (combo.type === 'single' && combo.strength >= 14) return false;
+
+                // Example rule from request: avoid playing A pair too early.
+                if (combo.type === 'pair' && combo.strength >= 14) return false;
+
+                return true;
+            });
+
+            if (conservativeCombos.length > 0) {
+                candidateCombos = conservativeCombos;
+            }
+        }
         
         // 우선순위와 카드 강도를 고려하여 최적의 조합 선택
         // 낮은 강도의 카드부터, 높은 우선순위 순으로 정렬
-        possibleCombos.sort((a, b) => {
+        candidateCombos.sort((a, b) => {
             // 우선순위가 높은 조합을 선호 (더 많은 카드를 한번에 낼 수 있는 조합)
             if (a.priority !== b.priority) return b.priority - a.priority;
-            // 같은 우선순위면 낮은 강도의 카드를 선호
-            return a.combo.strength - b.combo.strength;
+
+            const mediumPenalty = (item) => {
+                if (gameDifficulty !== 'medium') return 0;
+                let penalty = 0;
+                if (item.combo.type === 'single' && item.combo.strength >= 13) penalty += 8;
+                if ((item.combo.type === 'pair' || item.combo.type === 'triple') && item.combo.strength >= 13) penalty += 12;
+                if (item.combo.strength === 15) penalty += 10;
+                return penalty;
+            };
+
+            // 같은 우선순위면 낮은 강도 + 고카드 보존 성향(보통 난이도)을 선호
+            return (a.combo.strength + mediumPenalty(a)) - (b.combo.strength + mediumPenalty(b));
         });
         
-        return possibleCombos[0].indices;
+        return candidateCombos[0].indices;
     }
 
     // Render last play
@@ -1826,6 +1887,7 @@
     window.addEventListener('load', () => {
         // Just show the start screen, don't start the game automatically
         resetToStartScreen();
+        setDifficulty('easy');
         
         // 모바일 터치 이벤트 개선
         addMobileTouchSupport();
