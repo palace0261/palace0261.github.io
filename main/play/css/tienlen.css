@@ -427,7 +427,7 @@ body {
     overflow: hidden;
     width: 100%;
     margin: 0 auto;
-    height: 90%;
+    /* height: 42%; */
 }
 
 #lastPlayer {
@@ -730,8 +730,9 @@ p#lastPlayer {}
     padding: 10px !important;
 }
 .center-area.difficulty-hell .last-play {
-    min-height: 84px !important;
-    padding: 8px !important;
+    /* min-height: 84px !important; */
+    /* padding: 8px !important; */
+    height: 100%;
 }
 
 /* Make player-hand visually larger when it's the player's turn */
@@ -768,7 +769,7 @@ p#lastPlayer {}
         padding: 6px !important;
         box-shadow: inset 0 0 22px rgba(60,10,10,0.54) !important;
         /* limit height to about half the viewport to shrink area on small screens */
-        max-height: 50vh !important;
+        max-height: 29vh !important;
         overflow: auto;
     }
 
