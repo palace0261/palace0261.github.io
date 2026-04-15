@@ -83,12 +83,33 @@
         }
 
         /* Play history styling */
-        .last-play-list { max-width: 260px; margin: 0 auto; }
+        
         .history-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
         .history-cards { display: flex; gap: 0.4rem; align-items: center; }
-        .history-card { background: #222; color: #fff; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
-        .history-card.red { background: #b71c1c; }
-        .history-pass { background: #333; color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+        .history-card { padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
+        .history-card.red { /* no background */ }
+        .history-pass { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem; background: #333; color: #fff; }
+
+        /* Disabled secondary (Pass) appearance */
+        .btn.secondary:disabled {
+            background: #ccc !important;
+            color: #666 !important;
+            border-color: #bbb !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            opacity: 1 !important;
+        }
+
+        .last-play { min-height: 120px; }
+
+        .play-reason {
+            margin-top: 8px;
+            font-size: 0.82rem;
+            color: #bdd4e4;
+            text-align: center;
+            line-height: 1.1;
+            opacity: 0.95;
+        }
 
         @keyframes cardPop {
             0% { transform: scale(1); }
@@ -146,11 +167,7 @@
   </div>
 
   <!-- Game Info -->
-  <div class="game-info">
-    <div>턴: <span id="currentTurn">Player</span></div>
-    <div>남은 카드: <span id="cardsLeft">13</span>장</div>
-    <div>선택된 카드: <span id="selectedCount">0</span>장</div>
-  </div>
+    <!-- (game-info removed; turn and counts shown in player boxes) -->
 
   <!-- Pass Indicator -->
   <div class="pass-indicator" id="passIndicator">
@@ -187,27 +204,31 @@
     <div class="opponents">
       <div class="player" id="player1">
         <h4>🐶 AI 1</h4>
-        <p><span id="p1Cards">13</span>장</p>
+                <p><span id="p1Cards">13</span>장</p>
+                <div class="player-history" id="player1History"></div>
       </div>
       <div class="player" id="player2">
         <h4>🐱 AI 2</h4>
-        <p><span id="p2Cards">13</span>장</p>
+                <p><span id="p2Cards">13</span>장</p>
+                <div class="player-history" id="player2History"></div>
       </div>
       <div class="player" id="player3">
         <h4>🦊 AI 3</h4>
-        <p><span id="p3Cards">13</span>장</p>
+                <p><span id="p3Cards">13</span>장</p>
+                <div class="player-history" id="player3History"></div>
       </div>
+            <div class="player" id="player4">
+                <h4>🙂 나</h4>
+                <p><span id="p4Cards">13</span>장</p>
+                <div class="player-history" id="player4History"></div>
+            </div>
     </div>
 
     <!-- Center Play Area -->
     <div class="center-area">
             <div class="zqco">
 
-      <div class="last-play-list">
-        <div id="playHistoryContainer">
-          <p style="color: #999; text-align: center; font-size: 0.9rem;"></p>
-        </div>
-      </div>
+            <!-- play history moved into player boxes -->
 
       <div class="last-play" id="lastPlay">
         <p style="color: #999;">카드가 나오지 않았습니다</p>
@@ -225,6 +246,8 @@
       <div class="hand-cards" id="playerHand">
         <!-- Player cards will be inserted here -->
       </div>
+            <!-- Play reason shown here so it's not hidden by overflow -->
+            <div id="playReason" class="play-reason" aria-live="polite" style="display:none"></div>
             <div class="controls">
                 <div class="left">
                     <button class="btn neutral" onclick="newGame()">Re</button>
@@ -270,6 +293,7 @@
     const valueOrder = { '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14, '2': 15 };
     const suitOrder = { '♠': 1, '♣': 2, '♦': 3, '♥': 4 };
     let gameDifficulty = 'easy';
+    const DEBUG = window.location.search.includes('debug=1');
 
     function setDifficulty(level) {
         // Show UI selection and description per clicked button,
@@ -724,9 +748,24 @@
     // Validate if selected cards can be played
     function validatePlay() {
         const playBtn = document.getElementById('playBtn');
+            const passBtn = document.getElementById('passBtn');
+        if (typeof DEBUG !== 'undefined' && DEBUG) {
+            console.debug('validatePlay: currentPlayer=', gameState.currentPlayer, 'selected=', gameState.selectedCards);
+        }
         
+        const reasonEl = document.getElementById('playReason');
+        const setReason = (txt) => {
+            if (!reasonEl) return;
+            if (!txt) { reasonEl.style.display = 'none'; reasonEl.textContent = ''; return; }
+            reasonEl.textContent = txt;
+            reasonEl.style.display = 'block';
+        };
+
         if (gameState.selectedCards.length === 0) {
             playBtn.disabled = true;
+            if (passBtn) passBtn.disabled = false; // allow pass when nothing selected
+            setReason('카드를 선택하세요');
+            if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: no selection -> play disabled');
             return;
         }
 
@@ -735,6 +774,9 @@
         
         if (!combo.valid) {
             playBtn.disabled = true;
+            if (passBtn) passBtn.disabled = true;
+            setReason('유효하지 않은 조합입니다');
+            if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: combo invalid', combo);
             return;
         }
 
@@ -746,8 +788,13 @@
             
             if (hasSpade3) {
                 playBtn.disabled = false;
+                if (passBtn) passBtn.disabled = true;
+                setReason('');
             } else {
                 playBtn.disabled = true;
+                if (passBtn) passBtn.disabled = true;
+                setReason('첫 라운드에서는 반드시 3♠을 포함해야 합니다');
+                if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: first round requires 3♠');
             }
             return;
         }
@@ -755,13 +802,21 @@
         // 새 라운드 시작 (모든 플레이어가 패스한 후)
         if (gameState.lastPlay.length === 0) {
             playBtn.disabled = false;
+            if (passBtn) passBtn.disabled = true;
+            setReason('');
+            if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: new round -> allow play');
             return;
         }
 
         if (canBeat(combo, gameState.lastPlayCombo)) {
             playBtn.disabled = false;
+            if (passBtn) passBtn.disabled = true;
+            setReason('');
         } else {
             playBtn.disabled = true;
+            if (passBtn) passBtn.disabled = true;
+            setReason('상대 조합을 이길 수 없습니다');
+            if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: cannot beat lastPlayCombo', combo, gameState.lastPlayCombo);
         }
     }
 
@@ -1610,72 +1665,78 @@
     // 플레이 히스토리에 추가하는 함수
     function addToPlayHistory(cards, playerIndex) {
         const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
-        let historyItem;
-        if (cards === 'PASS') {
-            historyItem = {
-                cards: 'PASS',
-                player: playerNames[playerIndex],
-                playerIndex: playerIndex
-            };
-        } else {
-            historyItem = {
-                cards: Array.isArray(cards) ? [...cards] : [],
-                player: playerNames[playerIndex],
-                playerIndex: playerIndex
-            };
-        }
-        
-        // 최신 플레이를 맨 앞에 추가
+        // keep internal history array for logic
+        const historyItem = {
+            cards: cards === 'PASS' ? 'PASS' : (Array.isArray(cards) ? [...cards] : []),
+            player: playerNames[playerIndex],
+            playerIndex: playerIndex
+        };
         gameState.playHistory.unshift(historyItem);
-        
-        // 최대 4개까지만 유지
-        if (gameState.playHistory.length > 4) {
-            gameState.playHistory = gameState.playHistory.slice(0, 4);
+        if (gameState.playHistory.length > 16) gameState.playHistory = gameState.playHistory.slice(0, 16);
+
+        // Update player's small history area inside their player box
+        const histEl = document.getElementById(`player${playerIndex+1}History`);
+        if (histEl) {
+            if (historyItem.cards === 'PASS') {
+                histEl.innerHTML = `<div class="history-mini">🚫 패스</div>`;
+            } else {
+                // On small screens, condense similar cards (e.g., pairs) into one mini card with a count badge
+                const isMobile = window.matchMedia && window.matchMedia('(max-width: 520px)').matches;
+
+                if (isMobile) {
+                    // If the combo is a straight, show range (e.g., 3~5)
+                    const combo = analyzeCombo(historyItem.cards);
+                    if (combo.valid && combo.type === 'straight') {
+                        const sorted = [...historyItem.cards].sort((a, b) => a.strength - b.strength);
+                        const rangeText = `${sorted[0].value}~${sorted[sorted.length - 1].value}`;
+                        const rep = sorted[Math.floor(sorted.length/2)];
+                        const colorClass = (rep.suit === '♦' || rep.suit === '♥') ? 'red' : 'black';
+                        histEl.innerHTML = `
+                            <div class="history-mini-cards">
+                                <div class="history-mini-card ${colorClass} straight">
+                                    <div class="card-value">${rep.value}</div>
+                                    <div class="card-suit">${rep.suit}</div>
+                                    <div class="straight-range">${rangeText}</div>
+                                </div>
+                            </div>`;
+                    } else {
+                        // Group by value + color
+                        const groups = {};
+                        historyItem.cards.forEach(c => {
+                            const color = (c.suit === '♦' || c.suit === '♥') ? 'red' : 'black';
+                            const key = `${c.value}-${color}`;
+                            groups[key] = groups[key] || { count: 0, card: c, color };
+                            groups[key].count++;
+                        });
+
+                        const parts = Object.keys(groups).map(k => {
+                            const g = groups[k];
+                            const badge = g.count > 1 ? `<div class="history-badge">x${g.count}</div>` : '';
+                            return `
+                                <div class="history-mini-card ${g.color}">
+                                    <div class="card-value">${g.card.value}</div>
+                                    <div class="card-suit">${g.card.suit}</div>
+                                    ${badge}
+                                </div>`;
+                        }).join('');
+                        histEl.innerHTML = `<div class="history-mini-cards">${parts}</div>`;
+                    }
+                } else {
+                    const html = historyItem.cards.map(c => {
+                        const colorClass = (c.suit === '♦' || c.suit === '♥') ? 'red' : 'black';
+                        return `
+                            <div class="history-mini-card ${colorClass}">
+                                <div class="card-value">${c.value}</div>
+                                <div class="card-suit">${c.suit}</div>
+                            </div>`;
+                    }).join('');
+                    histEl.innerHTML = `<div class="history-mini-cards">${html}</div>`;
+                }
+            }
         }
-        
-        renderPlayHistory();
     }
     
-    // 플레이 히스토리를 렌더링하는 함수
-    function renderPlayHistory() {
-        const container = document.getElementById('playHistoryContainer');
-        
-        if (gameState.playHistory.length === 0) {
-            container.innerHTML = '<p style="color: #999; text-align: center; font-size: 0.9rem;">아직 기록이 없습니다</p>';
-            return;
-        }
-        
-        container.innerHTML = '';
-        gameState.playHistory.forEach(item => {
-            const historyDiv = document.createElement('div');
-            historyDiv.className = 'history-item';
-
-            const cardsDiv = document.createElement('div');
-            cardsDiv.className = 'history-cards';
-
-            if (item.cards === 'PASS') {
-                const passDiv = document.createElement('div');
-                passDiv.className = 'history-pass';
-                passDiv.textContent = '🚫 패스';
-                cardsDiv.appendChild(passDiv);
-            } else {
-                item.cards.forEach(card => {
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = `history-card ${card.suit === '♦' || card.suit === '♥' ? 'red' : 'black'}`;
-                    cardDiv.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
-                    cardsDiv.appendChild(cardDiv);
-                });
-            }
-
-            const playerDiv = document.createElement('div');
-            playerDiv.className = 'history-player';
-            playerDiv.textContent = item.player;
-
-            historyDiv.appendChild(cardsDiv);
-            historyDiv.appendChild(playerDiv);
-            container.appendChild(historyDiv);
-        });
-    }
+    // centralized playHistory rendering removed — history shown in each player box
 
     // Show pass indicator near the corresponding player element
     function showPassIndicator(playerIndex) {
@@ -1750,15 +1811,13 @@
         document.getElementById('p1Cards').textContent = gameState.players[0].length;
         document.getElementById('p2Cards').textContent = gameState.players[1].length;
         document.getElementById('p3Cards').textContent = gameState.players[2].length;
-        document.getElementById('cardsLeft').textContent = gameState.players[3].length;
+        // player4 represents the human ('나') in the opponents area
+        document.getElementById('p4Cards').textContent = gameState.players[3].length;
     }
 
     // Update game info
     function updateGameInfo() {
-        const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
-        document.getElementById('currentTurn').textContent = playerNames[gameState.currentPlayer];
-        document.getElementById('selectedCount').textContent = gameState.selectedCards.length;
-        
+        // game-info removed; keep counts in player boxes
         updateCardCounts();
     }
 
@@ -1766,6 +1825,18 @@
     function toggleRules() {
         const panel = document.getElementById('rulesPanel');
         panel.classList.toggle('show');
+
+        // If opened, bring into view (centered) for small screens and focus for accessibility
+        if (panel.classList.contains('show')) {
+            try {
+                panel.setAttribute('tabindex', '-1');
+                panel.focus({ preventScroll: true });
+            } catch (e) {}
+            // Smooth scroll so the panel is visible in the viewport
+            try { panel.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+        } else {
+            panel.removeAttribute('tabindex');
+        }
     }
 
     // Show message dialog
@@ -1874,9 +1945,21 @@
         const countdownScreen = document.getElementById('countdownScreen');
         const gameBoard = document.getElementById('gameBoard');
         const countdownText = document.getElementById('countdownText');
-        
+        const gameHeader = document.querySelector('.game-header');
+
         // Hide start screen, show countdown/loading
         startScreen.style.display = 'none';
+        // On small screens, hide the header when the game starts
+        try {
+            if (gameHeader) {
+                if (window.matchMedia && window.matchMedia('(max-width: 520px)').matches) {
+                    gameHeader.style.display = 'none';
+                } else {
+                    // ensure header remains visible on larger screens
+                    gameHeader.style.display = '';
+                }
+            }
+        } catch (e) {}
         if (countdownText) countdownText.textContent = countdownText.textContent || '게임 시작중...';
         if (countdownScreen) countdownScreen.style.display = 'flex';
         if (gameBoard) gameBoard.style.display = 'none';
