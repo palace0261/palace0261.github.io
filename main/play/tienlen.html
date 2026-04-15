@@ -1356,6 +1356,19 @@
         gameState.lastPlayCombo = combo;
         const prevLast = gameState.lastPlayer;
         gameState.lastPlayer = 3;
+        // If previous lastPlayer is now inactive (finished), or there are only two
+        // active players and some of them had explicitly passed, rejoin passers so
+        // they may respond to this new lead (fixes stalled case when multiple AIs finished).
+        try {
+            const activeCount = gameState.playerActive.filter(Boolean).length;
+            const passedActiveExists = gameState.explicitPass && gameState.explicitPass.some((v, i) => v && gameState.playerActive[i] && i !== gameState.currentPlayer);
+            if ((prevLast >= 0 && !gameState.playerActive[prevLast]) || (activeCount <= 2 && passedActiveExists)) {
+                gameState.inRound = gameState.playerActive.map(a => !!a);
+                gameState.explicitPass = gameState.playerActive.map(() => false);
+                try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+                gameState.passCount = 0;
+            }
+        } catch (e) { console.debug('rejoin-passers-after-play failed', e); }
         // If the player who was previously the last player plays again, this constitutes a new lead: rejoin passed players
         if (prevLast === 3) {
             gameState.inRound = gameState.playerActive.map(a => !!a);
@@ -1824,6 +1837,20 @@
             gameState.lastPlayCombo = analyzeCombo(playedCards);
             // set lastPlayer to current AI
             gameState.lastPlayer = gameState.currentPlayer;
+            // Rejoin passers in edge cases:
+            // - if previous last player is now inactive (finished), OR
+            // - if only two active players remain and some have explicitly passed,
+            // then restore participation so passers can respond to this new lead.
+            try {
+                const activeCount = gameState.playerActive.filter(Boolean).length;
+                const passedActiveExists = gameState.explicitPass && gameState.explicitPass.some((v, i) => v && gameState.playerActive[i] && i !== gameState.currentPlayer);
+                if ((prevLastPlayer >= 0 && !gameState.playerActive[prevLastPlayer]) || (activeCount <= 2 && passedActiveExists)) {
+                    gameState.inRound = gameState.playerActive.map(a => !!a);
+                    gameState.explicitPass = gameState.playerActive.map(() => false);
+                    try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+                    gameState.passCount = 0;
+                }
+            } catch (e) { console.debug('rejoin-passers-after-ai-play failed', e); }
             // Only if this AI was ALSO the previous lastPlayer, treat as new lead and rejoin passers
             if (prevLastPlayer === gameState.currentPlayer) {
                 gameState.inRound = gameState.playerActive.map(a => !!a);

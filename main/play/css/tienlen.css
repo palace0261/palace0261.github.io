@@ -784,7 +784,7 @@ p#lastPlayer {}
 
     /* Shrink individual card visuals in hand-cards so more fit horizontally */
     .player-hand .hand-cards {
-        grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
         gap: 6px;
     }
     .player-hand .card {
