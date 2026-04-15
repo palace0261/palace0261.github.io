@@ -422,13 +422,18 @@
         playerActive: [true, true, true, true], // true면 게임 중, false면 이미 우승으로 제외
         inRound: [true, true, true, true], // true면 현재 라운드에 참여중, false면 해당 라운드에서 패스(임시 제외)
         explicitPass: [false, false, false, false], // 명시적으로 패스한 플레이어 표시 (자동 스킵 방지)
-        showOpponentBacks: false // true 동안에만 AI 뒷면 프리뷰 표시
+        showOpponentBacks: false, // true 동안에만 AI 뒷면 프리뷰 표시
+        twoSkipCount: [0,0,0,0], // per-player counter for conserving non-Heart 2s in 'hell' mode
+        playCounter: 0, // increments when a non-PASS play is added
+        heartTwoPlayedAt: -1 // value of playCounter when Heart 2 was first played
     };
 
     // Prevent multiple rapid new-game starts
     let gameStarting = false;
     // Lock to prevent concurrent nextTurn executions
     let nextTurnLock = false;
+    // Lock to prevent concurrent aiTurn executions
+    let aiTurnLock = false;
 
     // Card suits and values
     const suits = ['♠', '♣', '♦', '♥'];
@@ -1397,8 +1402,48 @@
                 let chosen = -1;
                 if (gameState.lastPlayer >= 0 && gameState.playerActive[gameState.lastPlayer]) {
                     chosen = gameState.lastPlayer;
+                } else if (gameState.lastPlayer >= 0) {
+                    // If the lastPlayer exists but is now inactive (likely finished), see if
+                    // the next active player after lastPlayer should be allowed to lead
+                    // immediately. This is allowed only when all players between lastPlayer
+                    // and that candidate have explicitly passed or are inactive.
+                    const total = 4;
+                    // find next active after lastPlayer
+                    let nextAfterLast = -1;
+                    for (let i = 1; i <= total; i++) {
+                        const cand = (gameState.lastPlayer + i) % total;
+                        if (gameState.playerActive[cand]) { nextAfterLast = cand; break; }
+                    }
+
+                    if (nextAfterLast >= 0) {
+                        // check intermediate players between lastPlayer and nextAfterLast
+                        let allPassed = true;
+                        for (let i = 1; i < total; i++) {
+                            const idx = (gameState.lastPlayer + i) % total;
+                            if (idx === nextAfterLast) break;
+                            // ignore inactive players when deciding
+                            if (!gameState.playerActive[idx]) continue;
+                            if (!(gameState.explicitPass && gameState.explicitPass[idx])) { allPassed = false; break; }
+                        }
+
+                        if (allPassed) {
+                            chosen = nextAfterLast;
+                        }
+                    }
+
+                    // If we didn't choose based on lastPlayer chain, fall back to selecting
+                    // next active player starting after the current passer
+                    if (chosen === -1) {
+                        for (let i = 1; i <= 4; i++) {
+                            const cand = (gameState.currentPlayer + i) % 4;
+                            if (gameState.playerActive[cand]) {
+                                chosen = cand;
+                                break;
+                            }
+                        }
+                    }
                 } else {
-                    // try to find next active player starting after the current passer
+                    // No lastPlayer recorded - pick next active after current
                     for (let i = 1; i <= 4; i++) {
                         const cand = (gameState.currentPlayer + i) % 4;
                         if (gameState.playerActive[cand]) {
@@ -1425,7 +1470,7 @@
 
                 // If the current player is AI, let them start; otherwise update player's UI
                 if (gameState.currentPlayer !== 3) {
-                    setTimeout(() => aiTurn(), 1000);
+                    scheduleAiTurn(1000);
                 } else {
                     validatePlay();
                 }
@@ -1512,7 +1557,7 @@
         
         // Only call AI turn if it's actually an AI's turn
         if (gameState.currentPlayer !== 3) {
-            setTimeout(() => aiTurn(), 1000);
+            scheduleAiTurn(1000);
         } else {
             // Player's turn - update play validation
             validatePlay();
@@ -1520,6 +1565,22 @@
 
         // release lock after a short delay to allow any chained scheduling to respect ordering
         setTimeout(() => { nextTurnLock = false; }, 10);
+    }
+
+    // Centralized scheduler for AI turns to avoid overlapping timeouts causing double-turns
+    let _lastAiTimeout = null;
+    function scheduleAiTurn(delay = 700) {
+        try {
+            if (_lastAiTimeout) {
+                clearTimeout(_lastAiTimeout);
+                _lastAiTimeout = null;
+            }
+        } catch (e) { console.debug('clear lastAiTimeout failed', e); }
+
+        _lastAiTimeout = setTimeout(() => {
+            _lastAiTimeout = null;
+            try { aiTurn(); } catch (e) { console.debug('scheduled aiTurn failed', e); }
+        }, delay);
     }
 
     // Check whether the current round has ended (only one participant remains)
@@ -1566,7 +1627,7 @@
 
         // kick off next turn after a short delay so UX shows pass indicator / clearing
         if (gameState.currentPlayer !== 3) {
-            setTimeout(() => aiTurn(), 700);
+            scheduleAiTurn(700);
         } else {
             validatePlay();
         }
@@ -1578,6 +1639,13 @@
         if (gameState.currentPlayer === 3) {
             return;
         }
+
+        // prevent re-entrant AI executions
+        if (aiTurnLock) {
+            console.debug('aiTurn skipped due to aiTurnLock');
+            return;
+        }
+        aiTurnLock = true;
 
         // Skip if player inactive
         if (!gameState.playerActive[gameState.currentPlayer]) {
@@ -1632,6 +1700,8 @@
             console.debug('aiTurn play', { aiIndex: gameState.currentPlayer, playedCount: playableCards.length, aiWon, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
 
             // Animate AI's played cards from the AI box into center, then update UI and proceed
+            // release lock before animation callback so subsequent scheduled AI turns can run
+            try { aiTurnLock = false; } catch(e) {}
             animateLastPlay(playedCards, gameState.currentPlayer, null, () => {
                 renderGame();
                 updateGameInfo();
@@ -1679,6 +1749,7 @@
             });
         } else {
             // AI passes
+            try { aiTurnLock = false; } catch(e) {}
             passturn(true);
             return;
         }
@@ -1756,21 +1827,87 @@
                         if (alt) return alt;
                     }
 
-                    // In 'hell' difficulty: never play a non-Heart '2' while Heart '2' hasn't been played.
-                    // If the chosen combo contains any 2 that is NOT Heart and Heart2 hasn't been played,
-                    // prefer an alternative without any 2; if no alternative exists, pass (return []).
+                    // In 'hell' difficulty: usually avoid playing non-Heart '2' while Heart '2' hasn't been played.
+                    // But allow occasional forced plays after skipping a few times. If some opponents have
+                    // already passed, be slightly more willing (lower threshold).
                     try {
                         if (gameDifficulty === 'hell' && !hasHeartTwoPlayed()) {
+                            const playerIdx = gameState.currentPlayer;
                             const chosenHasNonHeartTwo = top && top.some(i => hand[i] && hand[i].value === '2' && hand[i].suit !== '♥');
                             if (chosenHasNonHeartTwo) {
                                 const altNoTwo = uniq.find(c => !c.some(i => hand[i] && hand[i].value === '2'));
-                                if (altNoTwo) return altNoTwo;
-                                // If no non-2 alternative, explicitly pass to avoid wasting a lower-2
-                                return [];
+                                if (altNoTwo) {
+                                    // picked an alternative without '2' -> reset skip counter
+                                    if (gameState.twoSkipCount) gameState.twoSkipCount[playerIdx] = 0;
+                                    return altNoTwo;
+                                }
+
+                                // No non-2 alternative available: decide based on skip counter
+                                try {
+                                    // Determine threshold: if other players have passed, be more willing.
+                                    // Also reduce thresholds when hand is small so AI doesn't hoard 2s until final card.
+                                    const othersPassed = gameState.explicitPass && gameState.explicitPass.some((v, idx) => idx !== playerIdx && v);
+                                    // default thresholds
+                                    let minSkip = othersPassed ? 2 : 3;
+                                    let maxSkip = othersPassed ? 3 : 4;
+                                    // if AI has few cards left, be more willing to play 2 sooner
+                                    if (hand.length <= 4) { minSkip = Math.max(1, minSkip - 1); maxSkip = Math.max(1, maxSkip - 1); }
+                                    if (hand.length <= 2) { minSkip = 0; maxSkip = 1; }
+                                    const threshold = Math.floor(Math.random() * (maxSkip - minSkip + 1)) + minSkip;
+
+                                    // ensure counter exists
+                                    if (!gameState.twoSkipCount) gameState.twoSkipCount = [0,0,0,0];
+                                    const cur = gameState.twoSkipCount[playerIdx] || 0;
+                                    if (cur >= threshold) {
+                                        // allow playing the non-Heart 2 this time
+                                        gameState.twoSkipCount[playerIdx] = 0;
+                                        return top;
+                                    } else {
+                                        // increment skip counter and pass
+                                        gameState.twoSkipCount[playerIdx] = cur + 1;
+                                        return [];
+                                    }
+                                } catch (e) {
+                                    console.debug('hell two-skip logic error', e);
+                                    return [];
+                                }
                             }
                         }
                     } catch (e) { console.debug('chooseComboFromCandidates hell-check error', e); }
 
+                    // If Heart-2 has already been played recently, avoid immediate mass-release
+                    // of other 2s: require at least one play cycle (or a skip counter) before
+                    // allowing non-Heart 2 to be used broadly. If others have already passed,
+                    // lower the requirement so AI is more willing.
+                    try {
+                        if (gameDifficulty === 'hell' && hasHeartTwoPlayed()) {
+                            const playerIdx2 = gameState.currentPlayer;
+                            const chosenHasNonHeartTwo2 = top && top.some(i => hand[i] && hand[i].value === '2' && hand[i].suit !== '♥');
+                            if (chosenHasNonHeartTwo2) {
+                                const playsSince = (gameState.playCounter || 0) - (gameState.heartTwoPlayedAt || 0);
+                                const othersPassed2 = gameState.explicitPass && gameState.explicitPass.some((v, idx) => idx !== playerIdx2 && v);
+                                const requiredPlays = othersPassed2 ? 0 : 1; // require at least one play after Heart2 unless someone passed
+
+                                if (playsSince < requiredPlays) {
+                                    // use skip counter to avoid always blocking forever
+                                    if (!gameState.twoSkipCount) gameState.twoSkipCount = [0,0,0,0];
+                                    const cur2 = gameState.twoSkipCount[playerIdx2] || 0;
+                                    if (cur2 >= 1) {
+                                        gameState.twoSkipCount[playerIdx2] = 0;
+                                        // allow play this time
+                                        try { if (gameState.twoSkipCount) gameState.twoSkipCount[gameState.currentPlayer] = 0; } catch(e) {}
+                                        return top;
+                                    } else {
+                                        gameState.twoSkipCount[playerIdx2] = cur2 + 1;
+                                        return [];
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) { console.debug('chooseComboFromCandidates heart2-release error', e); }
+
+                    // chosen top is acceptable: reset skip counter for this player
+                    try { if (gameState.twoSkipCount) gameState.twoSkipCount[gameState.currentPlayer] = 0; } catch(e) {}
                     return top;
             }
 
@@ -1838,6 +1975,31 @@
             return choice;
         }
 
+        // Helper to pick a choice but avoid playing a '2' as the very last card.
+        function chooseSafe(candidates) {
+            const res = chooseComboFromCandidates(candidates) || [];
+            try {
+                if (res.length > 0) {
+                    const hasTwo = res.some(i => hand[i] && hand[i].strength === 15);
+                    // If playing this would finish the hand and it contains 2, avoid it
+                    if (hasTwo && (hand.length - res.length) === 0) {
+                        // try alternatives excluding any candidates containing 2
+                        const altCandidates = (candidates || []).filter(c => !c.some(i => hand[i] && hand[i].strength === 15));
+                        const alt = chooseComboFromCandidates(altCandidates) || [];
+                        if (alt.length > 0) return alt;
+                        // if no alt, still avoid returning direct 2-as-last; force pass
+                        return [];
+                    }
+                    // If hand small (<=2) prefer playing a 2 early as long as it doesn't finish hand
+                    if (hand.length <= 2) {
+                        const candidateWithTwo = (candidates || []).find(c => c.some(i => hand[i] && hand[i].strength === 15) && (hand.length - c.length) > 0);
+                        if (candidateWithTwo) return candidateWithTwo;
+                    }
+                }
+            } catch (e) { console.debug('chooseSafe error', e); }
+            return res;
+        }
+
         // collect candidates per combo type
         const candidates = [];
 
@@ -1847,7 +2009,7 @@
                 const combo = analyzeCombo([hand[i]]);
                 if (canBeat(combo, targetCombo)) candidates.push([i]);
             }
-            return chooseComboFromCandidates(candidates) || [];
+            return chooseSafe(candidates) || [];
         }
 
         // Pairs
@@ -1858,7 +2020,7 @@
                     if (canBeat(combo, targetCombo)) candidates.push([i, i + 1]);
                 }
             }
-            return chooseComboFromCandidates(candidates) || [];
+            return chooseSafe(candidates) || [];
         }
 
         // Triples
@@ -1869,7 +2031,7 @@
                     if (canBeat(combo, targetCombo)) candidates.push([i, i + 1, i + 2]);
                 }
             }
-            return chooseComboFromCandidates(candidates) || [];
+            return chooseSafe(candidates) || [];
         }
 
         // Straights
@@ -1897,7 +2059,7 @@
                     }
                 }
             }
-            return chooseComboFromCandidates(candidates) || [];
+            return chooseSafe(candidates) || [];
         }
 
         return [];
@@ -2212,6 +2374,17 @@
             playerIndex: playerIndex
         };
         gameState.playHistory.unshift(historyItem);
+        // Increment playCounter for actual plays (not PASS). Record when Heart 2 first appears.
+        try {
+            if (historyItem.cards !== 'PASS') {
+                gameState.playCounter = (gameState.playCounter || 0) + 1;
+                // If any played card is Heart 2 and we haven't recorded it yet, record the playCounter value
+                const playedContainsHeart2 = Array.isArray(historyItem.cards) && historyItem.cards.some(c => c && c.value === '2' && c.suit === '♥');
+                if (playedContainsHeart2 && (typeof gameState.heartTwoPlayedAt === 'undefined' || gameState.heartTwoPlayedAt < 0)) {
+                    gameState.heartTwoPlayedAt = gameState.playCounter;
+                }
+            }
+        } catch (e) { console.debug('playCounter update failed', e); }
         if (gameState.playHistory.length > 16) gameState.playHistory = gameState.playHistory.slice(0, 16);
 
         // Update player's small history area inside their player box
@@ -2556,11 +2729,21 @@
     function newGame(confirm = false) {
         // If not confirmed, show confirmation dialog first
         if (!confirm) {
-            showRestartConfirm();
-            return;
+            // Prefer showing the restart confirmation dialog when available.
+            const dlg = document.getElementById('restartConfirm');
+            if (dlg) {
+                showRestartConfirm();
+                return;
+            }
+            // If the dialog element is missing for any reason, fall back to starting immediately
+            console.debug('newGame: restartConfirm dialog not found, starting immediately');
+            confirm = true;
         }
 
-        if (gameStarting) return; // already starting
+        if (gameStarting) {
+            try { showMessage('이미 게임이 시작 중입니다. 잠시만 기다려주세요.'); } catch(e) { console.debug('showMessage failed', e); }
+            return; // already starting
+        }
         gameStarting = true;
 
         // Disable new game buttons to avoid rapid clicks
@@ -2598,7 +2781,10 @@
             isFirstRound: true,
             playerActive: [true, true, true, true],
             inRound: [true, true, true, true],
-            showOpponentBacks: false
+            showOpponentBacks: false,
+            twoSkipCount: [0,0,0,0],
+            playCounter: 0,
+            heartTwoPlayedAt: -1
         };
         
         // Clear player's hand UI immediately when confirmed restart
@@ -2611,8 +2797,24 @@
             if (lastPlayerEl) lastPlayerEl.textContent = 'by: -';
         } catch (e) { console.debug('clear UI failed', e); }
 
-        // 바로 게임 시작
-        startGameCountdown();
+        // 바로 게임 시작 (비동기 함수이므로 실패 시 상태를 복구)
+        try {
+            startGameCountdown().catch(e => {
+                console.debug('startGameCountdown failed', e);
+                gameStarting = false;
+                try {
+                    const newBtns = document.querySelectorAll('button[onclick="newGame()"]');
+                    newBtns.forEach(b => b.disabled = false);
+                    const startBtn = document.querySelector('.start-game-btn');
+                    if (startBtn) startBtn.disabled = false;
+                } catch (err) { console.debug('re-enable new game buttons failed', err); }
+                try { showMessage('게임 시작 중 오류가 발생했습니다. 다시 시도해 주세요.'); } catch (err) { console.debug('showMessage failed', err); }
+            });
+        } catch (e) {
+            console.debug('startGameCountdown invocation error', e);
+            gameStarting = false;
+            try { showMessage('게임 시작 중 오류가 발생했습니다.'); } catch (err) { console.debug('showMessage failed', err); }
+        }
     }
 
     // Game start countdown function (temporarily disabled)
