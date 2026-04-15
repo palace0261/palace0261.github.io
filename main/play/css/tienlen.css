@@ -740,7 +740,7 @@ p#lastPlayer {}
     border-radius: calc(var(--radius-lg) + 6px) !important;
 }
 .player-hand.my-turn > h3 { font-size: 1.05rem !important; }
-.player-hand.my-turn .hand-cards {grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));gap: 10px;}
+
 .player-hand.my-turn .card { width: min(100%, 120px); }
 
 /* Make controls buttons a bit larger for desktop and touch devices */
