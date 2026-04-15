@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Tiến Lên icon">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f4f87"/>
+      <stop offset="100%" stop-color="#1d7ec3"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <rect width="64" height="64" rx="12" ry="12" fill="url(#bg)"/>
+
+  <!-- inner card shape -->
+  <rect x="8" y="6" width="48" height="52" rx="6" ry="6" fill="#fff" stroke="#e6eef6" stroke-width="1" filter="url(#shadow)"/>
+
+  <!-- suit symbols: left small spade/club, center large heart, right small diamond/club -->
+  <text x="20" y="22" font-family="Segoe UI Symbol, Noto Color Emoji, Arial Unicode MS, serif" font-size="10" fill="#222a33" text-anchor="middle">♠</text>
+  <text x="44" y="22" font-family="Segoe UI Symbol, Noto Color Emoji, Arial Unicode MS, serif" font-size="10" fill="#222a33" text-anchor="middle">♣</text>
+
+  <!-- big heart in center -->
+  <text x="32" y="40" font-family="Segoe UI Symbol, Noto Color Emoji, Arial Unicode MS, serif" font-size="22" fill="#d63138" text-anchor="middle">♥</text>
+
+</svg>

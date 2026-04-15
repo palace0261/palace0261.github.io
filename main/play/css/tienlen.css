@@ -99,6 +99,14 @@ body {
     align-items: center;
 }
 
+.history-badge{
+    position:absolute;
+    top: 0px;
+    right: 4px;
+    color: #ff3232;
+    font-weight: bold;
+}
+
 .rules-toggle > div span {
     font-size: 1.05rem;
 }
@@ -452,6 +460,7 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
     gap: 8px;
     margin-bottom: 8px;
+    padding: 0.5rem 0 0;
 }
 
 .card {
@@ -487,6 +496,17 @@ body {
     background: linear-gradient(160deg, #fffef6, #fff4d9);
 }
 
+/* pop animation used when player plays a card before flying animation */
+.card.play-pop {
+    animation: cardPlayPop 220ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+@keyframes cardPlayPop {
+    0% { transform: translateY(-6px) scale(1); box-shadow: 0 6px 12px rgba(240, 184, 74, 0.18); }
+    50% { transform: translateY(-14px) scale(1.08); box-shadow: 0 14px 26px rgba(240, 184, 74, 0.34); }
+    100% { transform: translateY(-8px) scale(1); box-shadow: 0 10px 18px rgba(240, 184, 74, 0.35); }
+}
+
 /* Force layer creation / reduce reflow on state changes */
 .player, .player-hand, .opponents, .hand-cards {
     transform: translateZ(0);
@@ -501,6 +521,30 @@ body {
 .card .card-suit {
     font-size: 1.55rem;
     line-height: 1;
+}
+
+/* suit color: red suits (♦, ♥) use brand red, black suits use default dark */
+.card.red .card-suit,
+.history-mini-card.red .card-suit,
+.animated-card.red .card-suit {
+    color: #d63138;
+}
+.card.black .card-suit,
+.history-mini-card.black .card-suit,
+.animated-card.black .card-suit {
+    color: #222a33;
+}
+
+/* match suit color for card-value as well */
+.card.red .card-value,
+.history-mini-card.red .card-value,
+.animated-card.red .card-value {
+    color: #d63138;
+}
+.card.black .card-value,
+.history-mini-card.black .card-value,
+.animated-card.black .card-value {
+    color: #222a33;
 }
 
 .card .card-value-bottom {
@@ -519,10 +563,78 @@ body {
 }
 
 .card-back {
-    background: linear-gradient(145deg, #1d7ec3, #0f4f87);
+    background: linear-gradient(145deg, #0f4f87 0%, #174f88 50%, #0e6aa8 100%);
     color: white;
     justify-content: center;
+    border: 1px solid rgba(0,0,0,0.35);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.28);
+    border-radius: 10px;
+    overflow: hidden;
 }
+
+/* Patterned red playing-card back (CSS-only, Bicycle-like) */
+.card-back.pattern-red {
+    background: linear-gradient(180deg, #c83a3a 0%, #b22b2b 60%, #8f1b1b 100%);
+}
+
+.card-back.pattern-red .card-back-face {
+    width: 86%;
+    height: 80%;
+    border-radius: 8px;
+    position: relative;
+    margin: auto;
+    overflow: hidden;
+    /* subtle inner texture */
+    background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0 6px, transparent 6px 12px);
+    background-size: 10px 10px, 6px 6px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,0.06);
+}
+
+/* white oval center */
+.card-back.pattern-red .card-back-face::before {
+    content: '';
+    position: absolute;
+    left: 8%;
+    right: 8%;
+    top: 10%;
+    bottom: 10%;
+    border-radius: 50% / 46%;
+    background: radial-gradient(circle at 50% 45%, #ffffff 0%, #ffffff 38%, rgba(255,255,255,0.95) 39%, rgba(255,255,255,0.98) 40%, rgba(255,255,255,0.03) 58%);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,0.6), 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* center small motif */
+.card-back.pattern-red .card-back-face::after {
+    content: '♣';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -48%);
+    font-size: 18px;
+    color: rgba(180, 30, 30, 0.95);
+    mix-blend-mode: multiply;
+}
+
+/* corner mini-ornaments (top-left / bottom-right) */
+.card-back.pattern-red .card-back-face .corner {
+    position: absolute;
+    font-size: 10px;
+    color: rgba(160,20,20,0.95);
+}
+.card-back.pattern-red .card-back-face .corner.tl { left: 8%; top: 8%; }
+.card-back.pattern-red .card-back-face .corner.br { right: 8%; bottom: 8%; transform: rotate(180deg); }
+
+/* small preview cards shown in opponent boxes */
+.hand-preview { display:flex; gap:6px; justify-content:center; align-items:center; }
+.hand-preview .card {
+    width: 28px;
+    height: 40px;
+    border-radius: 4px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    font-size: 10px;
+    padding: 4px 2px;
+}
+.hand-preview .card.card-back { background: linear-gradient(145deg, #1d7ec3, #0f4f87); }
 
 .controls {
     display: flex;
@@ -537,11 +649,11 @@ body {
     gap: 10px;
 }
 #playBtn{
-    background-color: #ff6b6b;
+    background-color: #8aff1d;
 }
 #passBtn{
-    background-color: #4b5560;
-    color: #99a7b2;
+    background-color: #29415c;
+    color: #ececec;
 }
 #bneu{
     color: #ebebeb;
@@ -679,6 +791,17 @@ body {
     50% { transform: translateY(-8px); }
 }
 
+/* Disable pop animation for black animated cards (AI/back) */
+.animated-card.black.pop {
+    animation: none !important;
+}
+
+/* Also disable pop for red animated cards and patterned backs when requested */
+.animated-card.red.pop,
+.animated-card.card-back.pattern-red.pop {
+    animation: none !important;
+}
+
 .firework {
     position: absolute;
     width: 4px;
@@ -731,12 +854,13 @@ body {
         gap: 6px;
     }
     .rules-toggle > div span:last-of-type{
-        display:none;
+        /* display:none; */
     }
     .game-header {
         padding: 10px 14px;
         display: flex;
         gap: 1rem;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
     }
@@ -803,7 +927,7 @@ body {
     /* Player history: limit height and allow scrolling so it doesn't push other UI */
     .player-history {
         max-height: 86px;
-        overflow-y: auto;
+        overflow-y: hidden !important;
         padding-right: 6px;
     }
 
@@ -885,11 +1009,11 @@ body {
     }
 
     .game-header {
-        padding: 8px 12px;
+        padding: 2rem 0;
     }
 
     .game-header > h1 {
-        font-size: 1.2rem;
+        font-size: 2.2rem;
     }
 
     .rules-panel {
@@ -956,8 +1080,14 @@ body {
     align-items: center;
 }
 
-.history-mini-cards { display:flex; gap:4px; flex-wrap: wrap; justify-content:center; }
-.history-mini-card {
+.history-mini-cards {
+    /* stack mini-cards on top of each other; show one and keep others in DOM */
+    position: relative;
+    width: 54px;
+    height: 76px;
+}
+.history-mini-cards { display:block; }
+.history-mini-cards .history-mini-card {
     /* match .card styling but scaled ~50% */
     width: 54px;
     aspect-ratio: 3 / 4.25;
@@ -975,6 +1105,15 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.16);
     color: #222a33;
 }
+.history-mini-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: opacity .18s ease, transform .18s ease;
+}
+.history-mini-cards .history-mini-card:first-child { z-index: 3; opacity: 1; pointer-events: auto; }
+.history-mini-cards .history-mini-card:not(:first-child) { z-index: 1; opacity: 0; pointer-events: none; transform: translateY(6px) scale(.99); }
+.history-mini-cards .history-badge { position: absolute; right: 0; bottom: -6px; }
 .history-mini-card.red { color: #d63138; }
 .history-mini-card.black { color: #222a33; }
 .history-mini-card .card-value { font-size: 0.9rem; }

@@ -11,6 +11,64 @@
 
   <meta property="og:title" content="티엔렌 - 쉐딩형 Card Game">
   <meta property="og:description" content="티엔렌 - 쉐딩형 Card Game">
+
+<script>
+    // Debug simulator: simulate sequences of 'play' or 'pass' by player indices (0..3)
+    // Usage in browser console: simulateScenario(['play','pass','pass','play'])
+    function simulateScenario(actions) {
+        console.debug('simulateScenario start', { actions });
+        // reset small state for reproducible run
+        gameState.playerActive = [true, true, true, true];
+        gameState.inRound = gameState.playerActive.map(() => true);
+        gameState.explicitPass = gameState.playerActive.map(() => false);
+        gameState.passCount = 0;
+        gameState.lastPlay = [];
+        gameState.lastPlayer = -1;
+
+        // start with player 0
+        gameState.currentPlayer = 0;
+        updateActivePlayer(); renderGame(); updateGameInfo();
+
+        let step = 0;
+        function stepOnce() {
+            if (step >= actions.length) {
+                console.debug('simulateScenario finished', { gameState });
+                return;
+            }
+            const action = actions[step];
+            console.debug('simulateScenario step', { step, action, currentPlayer: gameState.currentPlayer, inRound: [...gameState.inRound], explicitPass: [...gameState.explicitPass], passCount: gameState.passCount });
+            if (action === 'pass') {
+                // call passturn as AI to avoid UI restrictions
+                passturn(true);
+            } else if (action === 'play') {
+                // simulate a play by current player
+                simulatePlayBy(gameState.currentPlayer);
+            } else {
+                console.warn('unknown action', action);
+            }
+
+            step++;
+            // schedule next step shortly to allow async timeouts in code to run
+            setTimeout(stepOnce, 300);
+        }
+        stepOnce();
+    }
+
+    function simulatePlayBy(playerIndex) {
+        console.debug('simulatePlayBy', { playerIndex });
+        // set a fake lastPlay and treat this as a lead
+        gameState.lastPlay = [{ value: 'K', suit: '♠', strength: valueOrder['K'], suitStrength: suitOrder['♠'] }];
+        gameState.lastPlayCombo = analyzeCombo(gameState.lastPlay) || null;
+        gameState.lastPlayer = playerIndex;
+        // when someone leads, everyone re-enters round
+        gameState.inRound = gameState.playerActive.map(a => !!a);
+        gameState.explicitPass = gameState.playerActive.map(() => false);
+        gameState.passCount = 0;
+        console.debug('simulatePlayBy after lead', { currentPlayer: playerIndex, inRound: [...gameState.inRound], explicitPass: [...gameState.explicitPass], passCount: gameState.passCount });
+        // advance to next
+        nextTurn();
+    }
+</script>
   <meta property="og:image" content="/">
   <meta property="og:url" content="/">
   <meta property="og:type" content="website"> 
@@ -19,7 +77,7 @@
   <link rel="canonical" href="/">
   <link rel="icon" href="/" type="image/x-icon">
 
-  <title>Tiến Lên - 북부식 카드게임ㅁ</title>
+  <title>Tiến Lên - 북부식 카드게임</title>
 
   <!-- custum -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"> <!-- icon -->
@@ -38,7 +96,7 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.25);
             background: #fff;
             z-index: 9999;
-            transition: transform 420ms cubic-bezier(.2,.9,.2,1), opacity 300ms ease;
+            transition: transform 260ms cubic-bezier(.2,.9,.2,1), opacity 200ms ease;
             will-change: transform, opacity;
             pointer-events: none;
             display: flex;
@@ -53,7 +111,7 @@
         }
 
         .animated-card.pop {
-            animation: cardPop 280ms ease forwards;
+            animation: cardPop 180ms ease forwards;
         }
 
         /* Controls layout: left (Re), center (Play), right (Pass) */
@@ -92,8 +150,8 @@
 
         /* Disabled secondary (Pass) appearance */
         .btn.secondary:disabled {
-            background: #ccc !important;
-            color: #666 !important;
+            background: #272727 !important;
+            /* color: #4b5560 !important; */
             border-color: #bbb !important;
             cursor: not-allowed !important;
             box-shadow: none !important;
@@ -263,7 +321,7 @@
                     <button class="btn neutral" id="bneu" onclick="newGame()">Re</button>
                 </div>
                 <div class="center">
-                    <button class="btn primary" id="playBtn" style="background-color: #ff6b6b;" onclick="playCards()" disabled>Play a card</button>
+                    <button class="btn primary" id="playBtn" style="background-color: #8aff1d;" onclick="playCards()" disabled>Play a card</button>
                 </div>
                 <div class="right">
                     <button class="btn secondary" id="passBtn" onclick="passturn()">Pass</button>
@@ -292,7 +350,9 @@
         playHistory: [], // 최근 플레이 히스토리 저장 (최대 4개)
         isFirstRound: true, // 첫 번째 라운드 여부
         playerActive: [true, true, true, true], // true면 게임 중, false면 이미 우승으로 제외
-        inRound: [true, true, true, true] // true면 현재 라운드에 참여중, false면 해당 라운드에서 패스(임시 제외)
+        inRound: [true, true, true, true], // true면 현재 라운드에 참여중, false면 해당 라운드에서 패스(임시 제외)
+        explicitPass: [false, false, false, false], // 명시적으로 패스한 플레이어 표시 (자동 스킵 방지)
+        showOpponentBacks: false // true 동안에만 AI 뒷면 프리뷰 표시
     };
 
     // Prevent multiple rapid new-game starts
@@ -435,6 +495,8 @@
                     gameState.lastPlayer = gameState.currentPlayer;
                     // When someone leads (initial AI lead), ensure all active players are in the round
                     gameState.inRound = gameState.playerActive.map(a => !!a);
+                    // reset explicit pass flags when a new lead occurs
+                    gameState.explicitPass = gameState.playerActive.map(() => false);
                     gameState.passCount = 0;
                     gameState.isFirstRound = false; // 첫 번째 라운드 종료
 
@@ -1109,6 +1171,8 @@
         gameState.lastPlayer = 3;
         // When someone leads (plays cards), all players rejoin the round
         gameState.inRound = gameState.playerActive.map(a => !!a);
+        // reset explicit pass markers since a new lead resets pass state
+        gameState.explicitPass = gameState.playerActive.map(() => false);
         gameState.selectedCards = [];
         gameState.passCount = 0;
         gameState.isFirstRound = false; // 첫 번째 라운드 종료
@@ -1118,6 +1182,9 @@
         document.querySelectorAll('#playerHand .card.selected').forEach(card => {
             card.classList.remove('selected');
         });
+
+        // Debug: play action context
+        console.debug('playCards start', { currentPlayer: gameState.currentPlayer, selectedCount: selectedCardObjects.length, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], passCount: gameState.passCount });
 
         // Check win condition BEFORE UI updates
         const playerWon = gameState.players[3].length === 0;
@@ -1136,13 +1203,31 @@
                 updateGameInfo();
 
                 if (playerWon) {
-                    setTimeout(() => {
-                        showVictoryMessage('축하합니다! 승리하셨습니다!', true);
-                    }, 300);
+                    // mark human player finished and remove their cards
+                    gameState.playerActive[3] = false;
+                    gameState.players[3] = [];
+                    gameState.passCount = 0;
+                    renderGame();
+                    updateGameInfo();
+
+                    // If only one active player remains, show final victory
+                    const activeCount = gameState.playerActive.filter(Boolean).length;
+                    if (activeCount === 1) {
+                        const winnerIndex = gameState.playerActive.findIndex(v => v);
+                        const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
+                        setTimeout(() => {
+                            showVictoryMessage(`${playerNames[winnerIndex]}님이 최종 우승했습니다!`, winnerIndex === 3);
+                        }, 300);
+                    } else {
+                        setTimeout(() => {
+                            nextTurn();
+                        }, 300);
+                    }
                 } else {
-                    nextTurn();
+                    // check if round ended (everyone else passed)
+                    if (!checkRoundEnd()) nextTurn();
                 }
-            });
+                });
     }
 
     // Pass turn
@@ -1160,7 +1245,12 @@
 
         // Mark this player as having left the current round
         gameState.inRound[gameState.currentPlayer] = false;
+        // record this as an explicit pass so we don't accidentally treat it as active
+        gameState.explicitPass[gameState.currentPlayer] = true;
         gameState.passCount++;
+
+        // Debug: pass action
+        console.debug('pasturn', { player: gameState.currentPlayer, isAi: !!isAiCall, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], passCount: gameState.passCount, lastPlayer: gameState.lastPlayer });
 
         // Record pass in play history
         addToPlayHistory('PASS', gameState.currentPlayer);
@@ -1168,45 +1258,50 @@
         // Show pass indicator near the player who passed
         showPassIndicator(gameState.currentPlayer);
 
-        // Count how many players are still participating in this round
+        // Count how many players are still participating in this round (after this pass)
         const stillInRound = gameState.inRound.reduce((s, v, i) => s + ((v && gameState.playerActive[i]) ? 1 : 0), 0);
 
-        // If only one player remains in the round (the last player), clear the table and give them control
-        const requiredPasses = Math.max(stillInRound - 1, 0);
-
-        if (gameState.passCount >= requiredPasses) {
+        // If only one (or zero) player remains inRound, the round ends and leader takes control.
+        // Use remaining-participants check rather than passCount heuristic to avoid premature end.
+        if (stillInRound <= 1) {
             playSfx('turnEnd');
             setTimeout(() => {
                 // Reset table state but DO NOT re-enable inRound here — players rejoin when someone plays a new lead
                 gameState.lastPlay = [];
                 gameState.lastPlayCombo = null;
-                gameState.passCount = 0;
+            gameState.passCount = 0;
 
                 // Clear any selected cards (prevent stale indices causing errors)
                 gameState.selectedCards = [];
                 document.querySelectorAll('#playerHand .card.selected').forEach(card => card.classList.remove('selected'));
 
-                // Set current player to the one who played the last cards if valid and still active, otherwise pick next active/inRound player
+                // Determine next leader: prefer lastPlayer (the one who played last)
+                // Ensure only the leader remains inRound until they play again.
+                let chosen = -1;
                 if (gameState.lastPlayer >= 0 && gameState.playerActive[gameState.lastPlayer]) {
-                    gameState.currentPlayer = gameState.lastPlayer;
+                    chosen = gameState.lastPlayer;
                 } else {
-                    // find next active player starting from current
-                    let found = false;
-                    for (let i = 0; i < 4; i++) {
+                    // try to find next active player starting after the current passer
+                    for (let i = 1; i <= 4; i++) {
                         const cand = (gameState.currentPlayer + i) % 4;
-                        if (gameState.playerActive[cand] && gameState.inRound[cand]) {
-                            gameState.currentPlayer = cand;
-                            found = true;
+                        if (gameState.playerActive[cand]) {
+                            chosen = cand;
                             break;
                         }
                     }
-                    if (!found) {
-                        // fallback to first active player
-                        for (let i = 0; i < 4; i++) {
-                            if (gameState.playerActive[i]) { gameState.currentPlayer = i; break; }
-                        }
-                    }
                 }
+
+                // Only the chosen leader should remain inRound until they lead again
+                gameState.inRound = gameState.playerActive.map(() => false);
+                // reset explicit pass markers when pass cycle ends
+                gameState.explicitPass = gameState.playerActive.map(() => false);
+                if (chosen >= 0) {
+                    gameState.currentPlayer = chosen;
+                    gameState.inRound[chosen] = true;
+                }
+
+                // Debug: pass cycle finished
+                console.debug('passCycleEnd', { chosen, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], currentPlayer: gameState.currentPlayer });
 
                 updateActivePlayer();
                 renderGame();
@@ -1222,8 +1317,12 @@
             return; // Don't call nextTurn() here
         }
 
-        nextTurn();
-        updateGameInfo();
+        // Give a short delay for pass indicator / UX before advancing turn
+        const delay = isAiCall ? 700 : 0;
+        setTimeout(() => {
+            nextTurn();
+            updateGameInfo();
+        }, delay);
     }
 
     // Next turn
@@ -1235,6 +1334,7 @@
         let foundNext = false;
         for (let i = 0; i < 4; i++) {
             next = (next + 1) % 4;
+            // Strict: only players still marked inRound participate (explicit passes are excluded)
             if (gameState.playerActive[next] && gameState.inRound[next]) {
                 gameState.currentPlayer = next;
                 foundNext = true;
@@ -1257,6 +1357,8 @@
             playSfx('turnEnd');
         }
 
+        console.debug('nextTurn result', { prevPlayer, currentPlayer: gameState.currentPlayer, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
+
         if (gameState.currentPlayer === 3) {
             playSfx('myTurn');
         }
@@ -1268,6 +1370,56 @@
             setTimeout(() => aiTurn(), 1000);
         } else {
             // Player's turn - update play validation
+            validatePlay();
+        }
+    }
+
+    // Check whether the current round has ended (only one participant remains)
+    function checkRoundEnd() {
+        const still = gameState.inRound.reduce((s, v, i) => s + ((v && gameState.playerActive[i]) ? 1 : 0), 0);
+        if (still <= 1) {
+            // prefer lastPlayer as winner if valid
+            let winner = (gameState.lastPlayer >= 0 && gameState.playerActive[gameState.lastPlayer]) ? gameState.lastPlayer : -1;
+            endRound(winner);
+            return true;
+        }
+        return false;
+    }
+
+    // End current round and prepare for next: clear table, reset inRound to all active,
+    // set next currentPlayer to winner (if provided) or first active player.
+    function endRound(winnerIndex = -1) {
+        console.debug('endRound start', { winnerIndex, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
+        // clear table
+        gameState.lastPlay = [];
+        gameState.lastPlayCombo = null;
+        gameState.passCount = 0;
+
+        // reset participation so everyone active can play in the new round
+        gameState.inRound = gameState.playerActive.map(a => !!a);
+        if (gameState.explicitPass) gameState.explicitPass = gameState.playerActive.map(() => false);
+
+        // choose starter
+        if (winnerIndex >= 0 && gameState.playerActive[winnerIndex]) {
+            gameState.currentPlayer = winnerIndex;
+        } else {
+            const firstActive = gameState.playerActive.findIndex(v => v);
+            if (firstActive >= 0) gameState.currentPlayer = firstActive;
+        }
+
+        // reset lastPlayer (no current lead yet)
+        gameState.lastPlayer = -1;
+
+        console.debug('endRound finished', { currentPlayer: gameState.currentPlayer, inRound: [...gameState.inRound] });
+
+        updateActivePlayer();
+        renderGame();
+        updateGameInfo();
+
+        // kick off next turn after a short delay so UX shows pass indicator / clearing
+        if (gameState.currentPlayer !== 3) {
+            setTimeout(() => aiTurn(), 700);
+        } else {
             validatePlay();
         }
     }
@@ -1317,6 +1469,8 @@
             // Check AI win BEFORE UI updates
             const aiWon = aiHand.length === 0;
 
+            console.debug('aiTurn play', { aiIndex: gameState.currentPlayer, playedCount: playableCards.length, aiWon, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
+
             // Animate AI's played cards from the AI box into center, then update UI and proceed
             animateLastPlay(playedCards, gameState.currentPlayer, null, () => {
                 renderGame();
@@ -1324,25 +1478,30 @@
 
                 if (aiWon) {
                     const winner = gameState.currentPlayer;
-                    if (winner !== 3) {
-                        // Mark AI as finished and continue game without showing player victory modal
-                        gameState.playerActive[winner] = false;
-                        gameState.players[winner] = [];
-                        gameState.passCount = 0;
-                        // Continue with next active player
+                    // Mark winner inactive and clear their hand
+                    gameState.playerActive[winner] = false;
+                    gameState.players[winner] = [];
+                    gameState.passCount = 0;
+                    renderGame();
+                    updateGameInfo();
+
+                    // If only one active player remains, show final victory
+                    const activeCount = gameState.playerActive.filter(Boolean).length;
+                    if (activeCount === 1) {
+                        const winnerIndex = gameState.playerActive.findIndex(v => v);
+                        const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
                         setTimeout(() => {
-                            renderGame();
-                            updateGameInfo();
-                            nextTurn();
+                            showVictoryMessage(`${playerNames[winnerIndex]}님이 최종 우승했습니다!`, winnerIndex === 3);
                         }, 300);
                     } else {
-                        // Player victory (defensive)
+                        // Continue with next active player
                         setTimeout(() => {
-                            showVictoryMessage(`승리했습니다!`, true);
+                            nextTurn();
                         }, 300);
                     }
                 } else {
-                    nextTurn();
+                    // check if round ended after AI play
+                    if (!checkRoundEnd()) nextTurn();
                 }
             });
         } else {
@@ -1639,7 +1798,7 @@
         const animatedEls = [];
         cards.forEach((card, i) => {
             const el = document.createElement('div');
-            el.className = 'animated-card';
+            el.className = `animated-card ${card.suit === '♦' || card.suit === '♥' ? 'red' : 'black'}`;
             el.innerHTML = `
                 <div class="card-value">${card.value}</div>
                 <div class="card-suit">${card.suit}</div>
@@ -1675,22 +1834,22 @@
             container.appendChild(el);
             animatedEls.push(el);
 
-            // staggered animation
+            // staggered animation (faster)
             setTimeout(() => {
                 el.style.opacity = '1';
-                const dx = targetCenterX - startLeft + (i - cards.length / 2) * 12;
-                const dy = targetCenterY - startTop + (Math.sin(i) * 6);
+                const dx = targetCenterX - startLeft + (i - cards.length / 2) * 10;
+                const dy = targetCenterY - startTop + (Math.sin(i) * 5);
                 el.style.transform = `translate(${dx}px, ${dy}px) rotate(${(i - cards.length/2) * 6}deg) scale(0.95)`;
-            }, 30 + i * 80);
+            }, 10 + i * 50);
 
-            // pop effect on arrival
+            // pop effect on arrival (faster)
             setTimeout(() => {
                 el.classList.add('pop');
-            }, 360 + i * 80);
+            }, 120 + i * 50);
         });
 
-        // cleanup after animation
-        const totalDelay = 360 + cards.length * 80 + 220;
+        // cleanup after animation (adjusted to faster timing)
+        const totalDelay = 120 + cards.length * 50 + 220;
         setTimeout(() => {
             container.remove();
             if (callback) callback();
@@ -1726,6 +1885,7 @@
                         const rangeText = `${sorted[0].value}~${sorted[sorted.length - 1].value}`;
                         const rep = sorted[Math.floor(sorted.length/2)];
                         const colorClass = (rep.suit === '♦' || rep.suit === '♥') ? 'red' : 'black';
+                        const totalCount = historyItem.cards.length || 0;
                         histEl.innerHTML = `
                             <div class="history-mini-cards">
                                 <div class="history-mini-card ${colorClass} straight">
@@ -1733,6 +1893,7 @@
                                     <div class="card-suit">${rep.suit}</div>
                                     <div class="straight-range">${rangeText}</div>
                                 </div>
+                                <div class="history-badge">${totalCount > 1 ? 'x'+totalCount : ''}</div>
                             </div>`;
                     } else {
                         // Group by value + color
@@ -1744,19 +1905,17 @@
                             groups[key].count++;
                         });
 
+                        // keep all original cards in DOM but show a single visible card; badge shows total count
+                        const totalCount = historyItem.cards.length || 0;
                         const parts = Object.keys(groups).map(k => {
                             const g = groups[k];
-                            // UI shows one more than internal group count (fix off-by-one)
-                            const displayCount = g.count > 0 ? g.count + 1 : g.count;
-                            const badge = g.count > 1 ? `<div class="history-badge">x${displayCount}</div>` : '';
                             return `
                                 <div class="history-mini-card ${g.color}">
                                     <div class="card-value">${g.card.value}</div>
                                     <div class="card-suit">${g.card.suit}</div>
-                                    ${badge}
                                 </div>`;
                         }).join('');
-                        histEl.innerHTML = `<div class="history-mini-cards">${parts}</div>`;
+                        histEl.innerHTML = `<div class="history-mini-cards">${parts}<div class="history-badge">${totalCount > 1 ? 'x'+totalCount : ''}</div></div>`;
                     }
                 } else {
                     const html = historyItem.cards.map(c => {
@@ -1767,7 +1926,8 @@
                                 <div class="card-suit">${c.suit}</div>
                             </div>`;
                     }).join('');
-                    histEl.innerHTML = `<div class="history-mini-cards">${html}</div>`;
+                    const totalCount = historyItem.cards.length || 0;
+                    histEl.innerHTML = `<div class="history-mini-cards">${html}<div class="history-badge">${totalCount > 1 ? 'x'+totalCount : ''}</div></div>`;
                 }
             }
         }
@@ -1781,9 +1941,12 @@
         const name = playerNames[playerIndex] || '플레이어';
         const passIndicator = document.getElementById('passIndicator');
         const passMessage = document.getElementById('passMessage');
-        if (!passIndicator || !passMessage) return;
+            if (!passIndicator || !passMessage) return;
 
-        passMessage.textContent = `🚫 ${name} 패스`;
+            passMessage.textContent = `🚫 ${name} 패스`;
+
+            // ensure visible stacking
+            passIndicator.style.zIndex = 3000;
 
         // Default: center/right fixed
         passIndicator.style.position = 'fixed';
@@ -1791,27 +1954,34 @@
         passIndicator.style.transform = 'translate(-50%, -50%)';
 
         // Position near AI players (player1..player3) or player's hand
+        let left = window.innerWidth / 2;
+        let top = 40;
         if (playerIndex >= 0 && playerIndex <= 2) {
             const el = document.getElementById(`player${playerIndex + 1}`);
             if (el) {
                 const rect = el.getBoundingClientRect();
-                // place indicator slightly above the player box
-                const left = rect.left + rect.width / 2;
-                const top = rect.top - 10; // above
-                passIndicator.style.left = `${left}px`;
-                passIndicator.style.top = `${Math.max(top, 10)}px`;
+                if (rect && isFinite(rect.left)) {
+                    left = rect.left + rect.width / 2;
+                    top = Math.max(rect.top - 10, 10);
+                }
             }
         } else {
             // player's own hand: show near player-hand area
             const hand = document.querySelector('.player-hand');
             if (hand) {
                 const rect = hand.getBoundingClientRect();
-                const left = rect.left + rect.width / 2;
-                const top = rect.top - 10;
-                passIndicator.style.left = `${left}px`;
-                passIndicator.style.top = `${Math.max(top, 10)}px`;
+                if (rect && isFinite(rect.left)) {
+                    left = rect.left + rect.width / 2;
+                    top = Math.max(rect.top - 10, 10);
+                }
             }
         }
+
+        passIndicator.style.left = `${left}px`;
+        passIndicator.style.top = `${top}px`;
+
+        // debug
+        try { console.debug('showPassIndicator', { playerIndex, left, top, name }); } catch(e) {}
 
         // Clear previous timeout if exists
         if (passIndicatorTimeout) {
@@ -1968,7 +2138,8 @@
             playHistory: [],
             isFirstRound: true,
             playerActive: [true, true, true, true],
-            inRound: [true, true, true, true]
+            inRound: [true, true, true, true],
+            showOpponentBacks: false
         };
         
         // 바로 게임 시작
@@ -2128,7 +2299,7 @@
 
                 // Create a flying visual card
                 const fly = document.createElement('div');
-                fly.className = 'animated-card';
+                fly.className = `animated-card ${cardObj.suit === '♦' || cardObj.suit === '♥' ? 'red' : 'black'}`;
                 fly.style.width = '48px';
                 fly.style.height = '68px';
                 fly.style.left = (originX - boardRect.left - 24) + 'px';
@@ -2201,15 +2372,26 @@
         
         if (passBtn) {
             passBtn.addEventListener('touchstart', function(e) {
+                if (this.disabled) return; // do nothing when disabled
                 e.preventDefault();
                 this.style.transform = 'scale(0.98)';
             }, { passive: false });
-            
+
             passBtn.addEventListener('touchend', function(e) {
+                if (this.disabled) return; // ignore when disabled
                 e.preventDefault();
                 this.style.transform = '';
                 passturn();
             }, { passive: false });
+
+            // Block click events when disabled (capture phase to stop inline onclick)
+            passBtn.addEventListener('click', function(e) {
+                if (this.disabled) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            }, true);
         }
         
         // 새 게임 버튼도 터치 지원
