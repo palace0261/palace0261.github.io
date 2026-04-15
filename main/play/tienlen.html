@@ -961,23 +961,40 @@
         
         // 새 라운드 시작 (모든 플레이어가 패스한 후)
         if (gameState.lastPlay.length === 0) {
-            playBtn.disabled = false;
-            if (passBtn) passBtn.disabled = true;
-            setReason('');
-            if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: new round -> allow play');
+            // Only the designated starter (inRound true) may play freely; others must pass or wait
+            if (gameState.inRound[gameState.currentPlayer]) {
+                playBtn.disabled = false;
+                if (passBtn) passBtn.disabled = true;
+                setReason('');
+                if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: new round -> starter may play');
+            } else {
+                playBtn.disabled = true;
+                if (passBtn) passBtn.disabled = false;
+                setReason('현재 라운드 선두가 아닙니다 — 패스하세요');
+                if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: new round -> not starter, play disabled');
+            }
             return;
         }
 
-        if (canBeat(combo, gameState.lastPlayCombo)) {
-            playBtn.disabled = false;
-            if (passBtn) passBtn.disabled = true;
-            setReason('');
-        } else {
-            playBtn.disabled = true;
-            if (passBtn) passBtn.disabled = true;
-            setReason('상대 조합을 이길 수 없습니다');
-            if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: cannot beat lastPlayCombo', combo, gameState.lastPlayCombo);
-        }
+            if (canBeat(combo, gameState.lastPlayCombo)) {
+                playBtn.disabled = false;
+                if (passBtn) passBtn.disabled = true;
+                setReason('');
+            } else {
+                playBtn.disabled = true;
+                if (passBtn) passBtn.disabled = true;
+                setReason('상대 조합을 이길 수 없습니다');
+                if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: cannot beat lastPlayCombo', combo, gameState.lastPlayCombo);
+            }
+
+            // Ensure human player can still choose to Pass on their turn even if cards are selected,
+            // except when the first-round 3♠ rule requires a play.
+            try {
+                const requireSpade3 = gameState.isFirstRound && gameState.lastPlay.length === 0;
+                if (gameState.currentPlayer === 3 && passBtn) {
+                    passBtn.disabled = !!requireSpade3;
+                }
+            } catch (e) { }
     }
 
     // Check if cards have same color (red or black)
@@ -1318,6 +1335,7 @@
     // Pass turn
     function passturn(isAiCall = false) {
         // Player can pass only on their own turn. AI uses passturn(true).
+        console.debug('pasturn called', { isAiCall: !!isAiCall, currentPlayer: gameState.currentPlayer, playerActive: [...gameState.playerActive], inRound: [...gameState.inRound], explicitPass: [...gameState.explicitPass] });
         if (!isAiCall && gameState.currentPlayer !== 3) {
             return;
         }
@@ -1416,6 +1434,13 @@
 
     // Next turn
     function nextTurn() {
+        // prevent re-entrant nextTurn calls
+        if (nextTurnLock) {
+            console.debug('nextTurn blocked by lock');
+            return;
+        }
+        nextTurnLock = true;
+
         const prevPlayer = gameState.currentPlayer;
 
         // advance to next active player who is still participating in the current round
@@ -1434,12 +1459,21 @@
 
         // If no one remains inRound (shouldn't happen), fall back to next active player regardless of inRound
         if (!foundNext) {
-            for (let i = 0; i < 4; i++) {
-                const cand = (gameState.currentPlayer + i) % 4;
-                if (gameState.playerActive[cand]) {
-                    gameState.currentPlayer = cand;
-                    break;
+            // Prefer the next active player after prevPlayer. This avoids giving prevPlayer
+            // an immediate extra turn when others remain.
+            const otherActiveExists = gameState.playerActive.some((v, idx) => v && idx !== prevPlayer);
+            if (otherActiveExists) {
+                for (let i = 1; i <= 4; i++) {
+                    const cand = (prevPlayer + i) % 4;
+                    if (gameState.playerActive[cand]) {
+                        gameState.currentPlayer = cand;
+                        foundNext = true;
+                        break;
+                    }
                 }
+            } else {
+                // only prevPlayer remains active — keep them
+                gameState.currentPlayer = prevPlayer;
             }
         }
 
@@ -1462,6 +1496,9 @@
             // Player's turn - update play validation
             validatePlay();
         }
+
+        // release lock after a short delay to allow any chained scheduling to respect ordering
+        setTimeout(() => { nextTurnLock = false; }, 10);
     }
 
     // Check whether the current round has ended (only one participant remains)
@@ -1493,19 +1530,8 @@
         if (winnerIndex >= 0 && gameState.playerActive[winnerIndex]) {
             gameState.currentPlayer = winnerIndex;
         } else {
-            // Prefer the next active player after the current one to preserve natural turn order
-            let chosenStarter = -1;
-            for (let i = 1; i <= 4; i++) {
-                const cand = (gameState.currentPlayer + i) % 4;
-                if (gameState.playerActive[cand]) { chosenStarter = cand; break; }
-            }
-            if (chosenStarter >= 0) {
-                gameState.currentPlayer = chosenStarter;
-            } else {
-                // Fallback to first active player if nothing found
-                const firstActive = gameState.playerActive.findIndex(v => v);
-                if (firstActive >= 0) gameState.currentPlayer = firstActive;
-            }
+            const firstActive = gameState.playerActive.findIndex(v => v);
+            if (firstActive >= 0) gameState.currentPlayer = firstActive;
         }
 
         // reset lastPlayer (no current lead yet)
@@ -1537,8 +1563,14 @@
             nextTurn();
             return;
         }
-        
         const aiHand = gameState.players[gameState.currentPlayer];
+
+        // If table is cleared (new round) but this AI is NOT the designated starter, pass immediately
+        if (gameState.lastPlay.length === 0 && !gameState.inRound[gameState.currentPlayer]) {
+            passturn(true);
+            return;
+        }
+
         const playableCards = findAIPlay(aiHand);
         
         if (playableCards.length > 0) {
@@ -1645,6 +1677,11 @@
             return indices.some(i => hand[i] && hand[i].strength >= 14); // A(14) or 2(15)
         }
 
+        // Helper: check whether candidate indices include a '2'
+        function containsTwo(indices) {
+            return indices.some(i => hand[i] && hand[i].strength === 15);
+        }
+
         // Choose among candidates according to difficulty
         function chooseComboFromCandidates(candidates) {
             if (!candidates || candidates.length === 0) return [];
@@ -1676,6 +1713,13 @@
 
             // HELL: deeper thinking - prefer longer combos (reduce moves), avoid using 2 unless necessary
             if (gameDifficulty === 'hell') {
+                // Prefer combos that do NOT use a '2' if any alternatives exist
+                const nonTwo = uniq.filter(c => !containsTwo(c));
+                if (nonTwo.length > 0) {
+                    // operate on nonTwo instead of uniq for remaining selection
+                    uniq.length = 0;
+                    uniq.push(...nonTwo);
+                }
                 // prefer combos with more cards first (triples/straights), then lower max strength
                 uniq.sort((a, b) => {
                     if (b.length !== a.length) return b.length - a.length; // longer first
@@ -1700,7 +1744,56 @@
                 if (aMax !== bMax) return aMax - bMax;
                 return a.length - b.length;
             });
-            return uniq[0];
+            let choice = uniq[0];
+            // If the chosen combo uses a '2', prefer an alternative '2' with lower suitStrength when available
+            try {
+                if (choice && choice.some(i => hand[i] && hand[i].strength === 15)) {
+                    const twoCandidates = uniq.filter(c => c.some(i => hand[i] && hand[i].strength === 15));
+                    if (twoCandidates.length > 1) {
+                        twoCandidates.sort((a, b) => {
+                            const aMaxSuit = Math.max(...a.map(i => hand[i].suitStrength));
+                            const bMaxSuit = Math.max(...b.map(i => hand[i].suitStrength));
+                            return aMaxSuit - bMaxSuit;
+                        });
+                        const bestTwo = twoCandidates[0];
+                        const choiceMax = Math.max(...choice.map(i => hand[i].suitStrength));
+                        const bestMax = Math.max(...bestTwo.map(i => hand[i].suitStrength));
+                        if (bestMax < choiceMax) choice = bestTwo;
+                    }
+                }
+                // If the final choice is a single '2', check play history to see if any higher '2'
+                // has already been played in this game. If no higher '2' has been played yet,
+                // avoid playing the lower '2' when possible (prefer non-2 candidates) —
+                // in hard/hell prefer to pass to conserve 2s.
+                const isSingleTwo = choice && choice.length === 1 && hand[choice[0]] && hand[choice[0]].strength === 15;
+                if (isSingleTwo) {
+                    const chosenCard = hand[choice[0]];
+                    // check play history for any played '2' with higher suitStrength
+                    const higherPlayed = (gameState.playHistory || []).some(h => {
+                        if (!h || !h.cards || h.cards === 'PASS') return false;
+                        return h.cards.some(c => c && c.strength === 15 && c.suitStrength > chosenCard.suitStrength);
+                    });
+
+                    // check whether any other active player currently holds a higher '2'
+                    const higherHeld = gameState.players.some((phand, p) => {
+                        if (p === gameState.currentPlayer) return false;
+                        if (!gameState.playerActive[p]) return false;
+                        return phand.some(c => c && c.strength === 15 && c.suitStrength > chosenCard.suitStrength);
+                    });
+
+                    // If someone still holds a higher 2 and it hasn't been played yet,
+                    // avoid playing the lower 2 when possible (prefer non-2 candidates).
+                    if (higherHeld && !higherPlayed) {
+                        const alt = uniq.find(c => !c.some(i => hand[i] && hand[i].strength === 15));
+                        if (alt) {
+                            choice = alt;
+                        } else {
+                            if (gameDifficulty === 'hell') return [];
+                        }
+                    }
+                }
+            } catch (e) { }
+            return choice;
         }
 
         // collect candidates per combo type
@@ -1858,7 +1951,7 @@
 
         let candidateCombos = possibleCombos;
 
-        if (gameDifficulty === 'hard') {
+        if (gameDifficulty === 'hell') {
             const conservativeCombos = possibleCombos.filter(item => {
                 const combo = item.combo;
                 if (!combo || !combo.valid) return false;
@@ -1895,8 +1988,8 @@
             if (a.priority !== b.priority) return b.priority - a.priority;
 
             const mediumPenalty = (item) => {
-                // apply penalty when 'hard' difficulty (conservative)
-                if (gameDifficulty !== 'hard') return 0;
+                // apply penalty when 'hell' difficulty (conservative)
+                if (gameDifficulty !== 'hell') return 0;
                 let penalty = 0;
                 if (item.combo.type === 'single' && item.combo.strength >= 13) penalty += 8;
                 if ((item.combo.type === 'pair' || item.combo.type === 'triple') && item.combo.strength >= 13) penalty += 12;
@@ -1908,7 +2001,27 @@
             return (a.combo.strength + mediumPenalty(a)) - (b.combo.strength + mediumPenalty(b));
         });
         
-        return candidateCombos[0].indices;
+        // pick base choice
+        let chosenIndices = candidateCombos[0].indices;
+        // If chosen contains a '2', prefer another candidate with same priority but lower suitStrength for the 2
+        try {
+            const chosenHas2 = chosenIndices.some(i => candidateCombos[0].combo && candidateCombos[0].combo.cards.some(c => c.strength === 15));
+            if (chosenHas2) {
+                // find candidates with same priority that include a 2
+                const samePriority = candidateCombos.filter(item => item.priority === candidateCombos[0].priority && item.combo && item.combo.valid);
+                const twoCandidates = samePriority.filter(item => item.combo.cards.some(c => c.strength === 15));
+                if (twoCandidates.length > 1) {
+                    twoCandidates.sort((a, b) => {
+                        const aMax = Math.max(...a.combo.cards.map(c => c.suitStrength));
+                        const bMax = Math.max(...b.combo.cards.map(c => c.suitStrength));
+                        return aMax - bMax;
+                    });
+                    chosenIndices = twoCandidates[0].indices;
+                }
+            }
+        } catch (e) {}
+
+        return chosenIndices;
     }
 
     // Render last play
@@ -2278,6 +2391,58 @@
 
     // Pass indicator timeout handle
     let passIndicatorTimeout = null;
+    // Pass confirm state: track human double-click-to-pass when selection blocks pass
+    let passConfirm = { player: -1, timeout: null };
+
+    // Helper to handle pass attempts (click/touch) for human player
+    function handlePassAttempt(event) {
+        const passBtn = document.getElementById('passBtn');
+        if (!passBtn) return;
+
+        console.debug('handlePassAttempt', { disabled: passBtn.disabled, currentPlayer: gameState.currentPlayer, selectedCount: (gameState.selectedCards||[]).length });
+
+        const requireSpade3 = gameState.isFirstRound && gameState.lastPlay.length === 0;
+
+        // If pass button is enabled normally, just passturn()
+        if (!passBtn.disabled) {
+            passturn();
+            return;
+        }
+
+        // If pass is disabled but due to selected cards on human's turn, allow confirm flow
+        if (gameState.currentPlayer === 3 && gameState.selectedCards && gameState.selectedCards.length > 0 && !requireSpade3) {
+            // second click within window -> clear selection and pass
+            if (passConfirm.player === gameState.currentPlayer) {
+                if (passConfirm.timeout) { clearTimeout(passConfirm.timeout); passConfirm.timeout = null; }
+                passConfirm.player = -1;
+                clearSelection();
+                console.debug('handlePassAttempt -> confirmed passturn');
+                passturn();
+                return;
+            }
+
+            // first click: set pending and notify user briefly
+            passConfirm.player = gameState.currentPlayer;
+            if (passConfirm.timeout) clearTimeout(passConfirm.timeout);
+            // show small inline hint instead of modal
+            try {
+                const reasonEl = document.getElementById('playReason');
+                if (reasonEl) {
+                    const prev = reasonEl.textContent;
+                    reasonEl.textContent = '다시 클릭하면 선택 취소 후 패스합니다 (3초)';
+                    reasonEl.style.display = 'block';
+                    setTimeout(() => { reasonEl.textContent = prev; if (!prev) reasonEl.style.display = 'none'; }, 2800);
+                }
+            } catch (e) {}
+
+            passConfirm.timeout = setTimeout(() => {
+                passConfirm.player = -1;
+                passConfirm.timeout = null;
+            }, 3000);
+        } else {
+            // otherwise ignore (standard disabled)
+        }
+    }
     
     // Show victory message with special effects
     function showVictoryMessage(text, isPlayerWin = false) {
@@ -2623,25 +2788,25 @@
         
         if (passBtn) {
             passBtn.addEventListener('touchstart', function(e) {
-                if (this.disabled) return; // do nothing when disabled
+                // allow touchstart to show feedback even when disabled for selection-confirm flow
                 e.preventDefault();
                 this.style.transform = 'scale(0.98)';
             }, { passive: false });
 
             passBtn.addEventListener('touchend', function(e) {
-                if (this.disabled) return; // ignore when disabled
                 e.preventDefault();
                 this.style.transform = '';
-                passturn();
+                // delegate to unified handler which will perform confirm-flow when disabled
+                handlePassAttempt(e);
             }, { passive: false });
 
-            // Block click events when disabled (capture phase to stop inline onclick)
+            // Click handler (capture) - always route through handler so we can respond to disabled-but-confirm clicks
             passBtn.addEventListener('click', function(e) {
-                if (this.disabled) {
-                    e.preventDefault();
-                    e.stopImmediatePropagation();
-                    return false;
-                }
+                // stop default behavior and route to handler
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                handlePassAttempt(e);
+                return false;
             }, true);
         }
         

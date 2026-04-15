@@ -280,7 +280,8 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
+    /* padding: 1rem; */
     box-shadow: 0 8px 20px rgba(0,0,0,0.28);
     min-height: 120px;
     transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
@@ -297,7 +298,7 @@ body {
 .player > h4 { display:flex; align-items:center; justify-content:center; gap:0.6rem; font-size:1.02rem; margin:0; }
 .player > h4 .material-symbols-outlined, .player > h4 span.emoji { font-size:1.4rem; line-height:1; }
 .player > p { margin:0; color:var(--text-muted); font-weight:700; }
-.player-history { margin-top:8px; }
+.player-history {/* margin-top:8px; */}
 
 .center-area {
     background-color: #cccccc17;
@@ -697,18 +698,18 @@ p#lastPlayer {}
 .player {
     background: linear-gradient(160deg, rgba(18, 50, 80, 0.92), rgba(10, 30, 45, 0.82));
     border: 1px solid rgba(255,255,255,0.06);
-    padding: 1rem 1.1rem;
-    border-radius: calc(var(--radius-md) + 4px);
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 8px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.28);
-    min-height: 120px;
-    height: 128px; /* fixed height to avoid layout shift when content changes */
-    overflow: hidden; /* prevent internal growth from pushing layout */
-    transition: box-shadow 200ms ease, border-color 200ms ease;
+    padding: 1rem 0;
+    /* border-radius: calc(var(--radius-md) + 4px); */
+    /* text-align: center; */
+    /* display: flex; */
+    /* flex-direction: column; */
+    /* justify-content: center; */
+    /* gap: 8px; */
+    /* box-shadow: 0 8px 20px rgba(0,0,0,0.28); */
+    /* min-height: 120px; */
+    /* height: 128px; */ /* fixed height to avoid layout shift when content changes */
+    /* overflow: hidden; */ /* prevent internal growth from pushing layout */
+    /* transition: box-shadow 200ms ease, border-color 200ms ease; */
 }
 
 .btn.primary:disabled {
@@ -1089,7 +1090,7 @@ p#lastPlayer {}
 }
 
 .player-history {
-    margin-top: 6px;
+    /* margin-top: 6px; */
     font-size: 0.82rem;
     color: var(--text-muted);
     display: flex;
