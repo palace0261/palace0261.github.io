@@ -64,6 +64,7 @@
         gameState.inRound = gameState.playerActive.map(a => !!a);
         gameState.explicitPass = gameState.playerActive.map(() => false);
         gameState.passCount = 0;
+        try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
         console.debug('simulatePlayBy after lead', { currentPlayer: playerIndex, inRound: [...gameState.inRound], explicitPass: [...gameState.explicitPass], passCount: gameState.passCount });
         // advance to next
         nextTurn();
@@ -112,6 +113,29 @@
 
         .animated-card.pop {
             animation: cardPop 180ms ease forwards;
+        }
+
+        /* Deal animation: show card backs for flying deal cards */
+        .animated-card.deal-back {
+            background: linear-gradient(180deg, #222 0%, #111 100%);
+            color: transparent; /* hide any text inside */
+        }
+        .animated-card.deal-back .card-back {
+            width: 100%;
+            height: 100%;
+            border-radius: 6px;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 70% 70%;
+            box-shadow: inset 0 0 18px rgba(0,0,0,0.25);
+        }
+        .animated-card.deal-back.red .card-back {
+            background-color: #8b0000;
+            background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 10%, transparent 30%), linear-gradient(135deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08));
+        }
+        .animated-card.deal-back.black .card-back {
+            background-color: #0b3b5b;
+            background-image: radial-gradient(circle at 70% 70%, rgba(255,255,255,0.04) 0%, transparent 15%), linear-gradient(135deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08));
         }
 
         /* Controls layout: left (Re), center (Play), right (Pass) */
@@ -170,7 +194,7 @@
         .play-reason {
             /* margin-top: 8px; */
             font-size: 0.82rem;
-            /* color: #bdd4e4; */
+             color: #ffef0a; 
             /* text-align: center; */
             /* line-height: 1.1; */
             /* opacity: 0.95; */
@@ -200,13 +224,14 @@
     </button>
     
     <div class="rules-panel" id="rulesPanel">
-      <h3>🎯 게임 규칙</h3>
-      <ul style="text-align: left; margin: 1rem 0;">
-        <li><strong>목표:</strong> 13장의 카드를 가장 먼저 모두 내는 사람이 승리</li>
-        <li><strong>시작:</strong> 3♠을 가진 플레이어가 첫 번째로 카드를 냄</li>
-        <li><strong>진행:</strong> 시계방향으로 더 강한 카드/조합을 내거나 패스</li>
-        <li><strong>패스:</strong> 모든 플레이어가 패스하면 마지막에 카드를 낸 사람이 새로 시작</li>
-      </ul>
+            <h3>🎯 게임 규칙</h3>
+            <ul style="text-align: left; margin: 1rem 0;">
+                <li><strong>플레이어:</strong> AI 1, AI 2, AI 3 그리고 나(총 4인)</li>
+                <li><strong>진행:</strong> 턴마다 다음 플레이어는 이전에 낸 카드보다 더 높은 카드를 내야 합니다</li>
+                <li><strong>패스:</strong> 플레이어가 패스를 하면 해당 라운드에서 임시로 제외됩니다(별도 '패스' 문구를 띄울 필요 없음)</li>
+                <li><strong>새로운 리드:</strong> 이전에 높은 카드를 낸 플레이어가 이후에 다시 어떤 카드를 내면 그 즉시 라운드가 새로 시작되고, 이전에 제외된 플레이어들은 모두 다시 참가합니다</li>
+                <li><strong>예시:</strong> 일부 플레이어가 패스해도, 누군가 새로운 카드를 리드하면 모든 플레이어가 다시 참여하여 순환합니다</li>
+            </ul>
       
       <h3>📊 카드 강도 (약함 → 강함)</h3>
       <p><strong>숫자:</strong> 3 &lt; 4 &lt; 5 &lt; 6 &lt; 7 &lt; 8 &lt; 9 &lt; 10 &lt; J &lt; Q &lt; K &lt; A &lt; 2</p>
@@ -357,6 +382,8 @@
 
     // Prevent multiple rapid new-game starts
     let gameStarting = false;
+    // Lock to prevent concurrent nextTurn executions
+    let nextTurnLock = false;
 
     // Card suits and values
     const suits = ['♠', '♣', '♦', '♥'];
@@ -711,6 +738,8 @@
         renderLastPlay();
         updateActivePlayer();
         updateCardCounts();
+        // Ensure transparency reflects current explicitPass state for all players
+        try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency error', e); }
     }
 
     // Render player's hand
@@ -868,7 +897,7 @@
             } else {
                 playBtn.disabled = true;
                 if (passBtn) passBtn.disabled = true;
-                setReason('첫 라운드에서는 반드시 3♠을 포함해야 합니다');
+                setReason('첫 라운드는 3♠을 포함');
                 if (typeof DEBUG !== 'undefined' && DEBUG) console.debug('validatePlay: first round requires 3♠');
             }
             return;
@@ -1173,6 +1202,7 @@
         gameState.inRound = gameState.playerActive.map(a => !!a);
         // reset explicit pass markers since a new lead resets pass state
         gameState.explicitPass = gameState.playerActive.map(() => false);
+        try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
         gameState.selectedCards = [];
         gameState.passCount = 0;
         gameState.isFirstRound = false; // 첫 번째 라운드 종료
@@ -1245,18 +1275,23 @@
 
         // Mark this player as having left the current round
         gameState.inRound[gameState.currentPlayer] = false;
-        // record this as an explicit pass so we don't accidentally treat it as active
-        gameState.explicitPass[gameState.currentPlayer] = true;
-        gameState.passCount++;
 
-        // Debug: pass action
-        console.debug('pasturn', { player: gameState.currentPlayer, isAi: !!isAiCall, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], passCount: gameState.passCount, lastPlayer: gameState.lastPlayer });
-
-        // Record pass in play history
-        addToPlayHistory('PASS', gameState.currentPlayer);
-
-        // Show pass indicator near the player who passed
-        showPassIndicator(gameState.currentPlayer);
+        // If this is the player's first explicit pass in this cycle, mark and show indicator.
+        // If they already passed earlier, don't show the pass indicator again (silent skip).
+        if (!gameState.explicitPass[gameState.currentPlayer]) {
+            gameState.explicitPass[gameState.currentPlayer] = true;
+            gameState.passCount++;
+            // Debug: pass action (first-time pass)
+            console.debug('pasturn (first)', { player: gameState.currentPlayer, isAi: !!isAiCall, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], passCount: gameState.passCount, lastPlayer: gameState.lastPlayer });
+            try { showPassIndicator(gameState.currentPlayer); } catch(e) {}
+            // Add a PASS entry to the player's small history so opponents see they've passed
+            try { addToPlayHistory('PASS', gameState.currentPlayer); } catch(e) { console.debug('addToPlayHistory PASS failed', e); }
+            // Immediately update transparency so opponents appear faded when they first pass
+            try { updatePlayerTransparency(); } catch(e) { console.debug('updatePlayerTransparency failed', e); }
+        } else {
+            // Already passed previously in this cycle — treat as silent skip
+            console.debug('pasturn (silent skip)', { player: gameState.currentPlayer, isAi: !!isAiCall, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], passCount: gameState.passCount, lastPlayer: gameState.lastPlayer });
+        }
 
         // Count how many players are still participating in this round (after this pass)
         const stillInRound = gameState.inRound.reduce((s, v, i) => s + ((v && gameState.playerActive[i]) ? 1 : 0), 0);
@@ -1327,34 +1362,37 @@
 
     // Next turn
     function nextTurn() {
-        const prevPlayer = gameState.currentPlayer;
-
-        // advance to next active player who is still participating in the current round
-        let next = gameState.currentPlayer;
-        let foundNext = false;
-        for (let i = 0; i < 4; i++) {
-            next = (next + 1) % 4;
-            // Strict: only players still marked inRound participate (explicit passes are excluded)
-            if (gameState.playerActive[next] && gameState.inRound[next]) {
-                gameState.currentPlayer = next;
-                foundNext = true;
-                break;
-            }
+        // Prevent concurrent execution which can cause inconsistent currentPlayer
+        if (nextTurnLock) {
+            console.debug('nextTurn skipped due to lock');
+            return;
         }
+        nextTurnLock = true;
+        try {
+            const prevPlayer = gameState.currentPlayer;
 
-        // If no one remains inRound (shouldn't happen), fall back to next active player regardless of inRound
-        if (!foundNext) {
-            for (let i = 0; i < 4; i++) {
-                const cand = (gameState.currentPlayer + i) % 4;
-                if (gameState.playerActive[cand]) {
+            // Start searching from the next position after the previous player
+            let foundNext = false;
+            for (let step = 1; step <= 4; step++) {
+                const cand = (prevPlayer + step) % 4;
+                if (gameState.playerActive[cand] && gameState.inRound[cand]) {
                     gameState.currentPlayer = cand;
+                    foundNext = true;
                     break;
                 }
             }
-        }
 
-        if (gameState.currentPlayer !== prevPlayer) {
-            playSfx('turnEnd');
+            // If no one remains inRound, fall back to first overall active player
+            if (!foundNext) {
+                const firstActive = gameState.playerActive.findIndex(v => v);
+                if (firstActive >= 0) gameState.currentPlayer = firstActive;
+            }
+
+            if (gameState.currentPlayer !== prevPlayer) {
+                playSfx('turnEnd');
+            }
+        } finally {
+            nextTurnLock = false;
         }
 
         console.debug('nextTurn result', { prevPlayer, currentPlayer: gameState.currentPlayer, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
@@ -1460,6 +1498,9 @@
             // When AI leads (plays cards), all players rejoin the round
             gameState.inRound = gameState.playerActive.map(a => !!a);
             gameState.passCount = 0;
+            // ensure any previous pass state is cleared visually
+            gameState.explicitPass = gameState.playerActive.map(() => false);
+            try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
             gameState.isFirstRound = false; // 첫 번째 라운드 종료
             playSfx('cardPlay');
 
@@ -2013,6 +2054,22 @@
 
     }
 
+    // Update visual transparency for players who have explicitly passed
+    function updatePlayerTransparency() {
+        document.querySelectorAll('.player').forEach((playerEl, index) => {
+            try {
+                // Apply to any active player (including human) who explicitly passed in this cycle
+                if (gameState.playerActive[index] && gameState.explicitPass[index]) {
+                    playerEl.style.opacity = '0.5';
+                } else {
+                    playerEl.style.opacity = '';
+                }
+            } catch (e) {
+                // ignore any DOM errors
+            }
+        });
+    }
+
     // Update card counts
     function updateCardCounts() {
         document.getElementById('p1Cards').textContent = gameState.players[0].length;
@@ -2126,6 +2183,14 @@
             countdownScreen.style.display = 'flex';
         }
 
+        // Clear center-area UI immediately when starting a new game
+        try {
+            const lastPlayEl = document.getElementById('lastPlay');
+            if (lastPlayEl) lastPlayEl.innerHTML = '<p style="color: #999;">아직 카드가 나오지 않았습니다</p>';
+            const lastPlayerEl = document.getElementById('lastPlayer');
+            if (lastPlayerEl) lastPlayerEl.textContent = 'by: -';
+        } catch (e) { console.debug('clear center-area failed', e); }
+
         gameState = {
             deck: [],
             players: [[], [], [], []],
@@ -2158,15 +2223,10 @@
 
         // Hide start screen, show countdown/loading
         startScreen.style.display = 'none';
-        // On small screens, hide the header when the game starts
+        // Hide the header when the game starts
         try {
             if (gameHeader) {
-                if (window.matchMedia && window.matchMedia('(max-width: 520px)').matches) {
-                    gameHeader.style.display = 'none';
-                } else {
-                    // ensure header remains visible on larger screens
-                    gameHeader.style.display = '';
-                }
+                gameHeader.style.display = 'none';
             }
         } catch (e) {}
         if (countdownText) countdownText.textContent = countdownText.textContent || '게임 시작중...';
@@ -2248,6 +2308,13 @@
         if (gameInfo) {
             gameInfo.style.display = 'none';
         }
+        // Also clear center-area cards when resetting to start screen
+        try {
+            const lastPlayEl = document.getElementById('lastPlay');
+            if (lastPlayEl) lastPlayEl.innerHTML = '<p style="color: #999;">아직 카드가 나오지 않았습니다</p>';
+            const lastPlayerEl = document.getElementById('lastPlayer');
+            if (lastPlayerEl) lastPlayerEl.textContent = 'by: -';
+        } catch (e) { console.debug('clear center-area failed', e); }
     }
 
     // Initialize game when page loads (just setup, don't start)
@@ -2299,13 +2366,14 @@
 
                 // Create a flying visual card
                 const fly = document.createElement('div');
-                fly.className = `animated-card ${cardObj.suit === '♦' || cardObj.suit === '♥' ? 'red' : 'black'}`;
+                // mark as deal-back so CSS shows card back during deal animation
+                fly.className = `animated-card ${cardObj.suit === '♦' || cardObj.suit === '♥' ? 'red' : 'black'} deal-back`;
                 fly.style.width = '48px';
                 fly.style.height = '68px';
                 fly.style.left = (originX - boardRect.left - 24) + 'px';
                 fly.style.top = (originY - boardRect.top - 34) + 'px';
                 fly.style.opacity = '0';
-                fly.innerHTML = `<div class="card-value">${cardObj.value}</div><div class="card-suit">${cardObj.suit}</div>`;
+                fly.innerHTML = `<div class="card-back"></div>`;
                 document.body.appendChild(fly);
 
                 // Determine target rect
