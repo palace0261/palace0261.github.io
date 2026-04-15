@@ -1770,10 +1770,25 @@
         }
         const aiHand = gameState.players[gameState.currentPlayer];
 
-        // If table is cleared (new round) but this AI is NOT the designated starter, pass immediately
+        // If table is cleared (new round) but this AI is NOT marked inRound, allow rescue:
+        // in some edge cases the chosen leader flag can be stale; if table empty and
+        // there are no other active players inRound, promote this AI to leader so it can play.
         if (gameState.lastPlay.length === 0 && !gameState.inRound[gameState.currentPlayer]) {
-            passturn(true);
-            return;
+            try {
+                const othersInRound = (gameState.inRound || []).reduce((s, v, i) => s + ((i !== gameState.currentPlayer && v && gameState.playerActive[i]) ? 1 : 0), 0);
+                if (othersInRound === 0) {
+                    dbgTurn('aiTurn: promoting current AI to leader due to empty table', { player: gameState.currentPlayer });
+                    gameState.inRound[gameState.currentPlayer] = true;
+                    if (gameState.explicitPass) gameState.explicitPass[gameState.currentPlayer] = false;
+                } else {
+                    passturn(true);
+                    return;
+                }
+            } catch (e) {
+                // fallback to pass if anything unexpected
+                try { passturn(true); } catch (e2) { console.debug('aiTurn promotion failed, passturn also failed', e, e2); }
+                return;
+            }
         }
 
         const playableCards = findAIPlay(aiHand);
