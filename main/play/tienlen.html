@@ -101,14 +101,21 @@
         }
 
         .last-play { min-height: 120px; }
-
+        .padh{
+          display: flex;
+          display: flex;
+          flex-direction: row;
+          justify-content: space-between;
+          align-items: center;
+          align-content: center;
+        }
         .play-reason {
-            margin-top: 8px;
+            /* margin-top: 8px; */
             font-size: 0.82rem;
-            color: #bdd4e4;
-            text-align: center;
-            line-height: 1.1;
-            opacity: 0.95;
+            /* color: #bdd4e4; */
+            /* text-align: center; */
+            /* line-height: 1.1; */
+            /* opacity: 0.95; */
         }
 
         @keyframes cardPop {
@@ -242,18 +249,21 @@
 
     <!-- Player Hand -->
     <div class="player-hand">
-      <h3>My Hand</h3>
+        <div class="padh">
+            <h3>My Hand</h3>
+            <div id="playReason" class="play-reason" aria-live="polite" style="display:none"></div>
+      </div>
       <div class="hand-cards" id="playerHand">
         <!-- Player cards will be inserted here -->
       </div>
             <!-- Play reason shown here so it's not hidden by overflow -->
-            <div id="playReason" class="play-reason" aria-live="polite" style="display:none"></div>
+            
             <div class="controls">
                 <div class="left">
                     <button class="btn neutral" onclick="newGame()">Re</button>
                 </div>
                 <div class="center">
-                    <button class="btn primary" id="playBtn" onclick="playCards()" disabled>Play a card</button>
+                    <button class="btn primary" id="playBtn" style="background-color: #ff6b6b;" onclick="playCards()" disabled>Play a card</button>
                 </div>
                 <div class="right">
                     <button class="btn secondary" id="passBtn" onclick="passturn()">Pass</button>
@@ -281,7 +291,8 @@
         passCount: 0,
         playHistory: [], // 최근 플레이 히스토리 저장 (최대 4개)
         isFirstRound: true, // 첫 번째 라운드 여부
-        playerActive: [true, true, true, true] // true면 게임 중, false면 이미 우승으로 제외
+        playerActive: [true, true, true, true], // true면 게임 중, false면 이미 우승으로 제외
+        inRound: [true, true, true, true] // true면 현재 라운드에 참여중, false면 해당 라운드에서 패스(임시 제외)
     };
 
     // Prevent multiple rapid new-game starts
@@ -422,6 +433,8 @@
                     gameState.lastPlay = playedCards;
                     gameState.lastPlayCombo = analyzeCombo(playedCards);
                     gameState.lastPlayer = gameState.currentPlayer;
+                    // When someone leads (initial AI lead), ensure all active players are in the round
+                    gameState.inRound = gameState.playerActive.map(a => !!a);
                     gameState.passCount = 0;
                     gameState.isFirstRound = false; // 첫 번째 라운드 종료
 
@@ -1094,6 +1107,8 @@
         gameState.lastPlay = selectedCardObjects;
         gameState.lastPlayCombo = combo;
         gameState.lastPlayer = 3;
+        // When someone leads (plays cards), all players rejoin the round
+        gameState.inRound = gameState.playerActive.map(a => !!a);
         gameState.selectedCards = [];
         gameState.passCount = 0;
         gameState.isFirstRound = false; // 첫 번째 라운드 종료
@@ -1143,23 +1158,26 @@
             return;
         }
 
+        // Mark this player as having left the current round
+        gameState.inRound[gameState.currentPlayer] = false;
         gameState.passCount++;
 
         // Record pass in play history
         addToPlayHistory('PASS', gameState.currentPlayer);
 
-        // Round resets when every other active player passed.
-        const activePlayerCount = gameState.playerActive.filter(Boolean).length;
-        const requiredPasses = Math.max(activePlayerCount - 1, 1);
-
         // Show pass indicator near the player who passed
         showPassIndicator(gameState.currentPlayer);
-        
-        // If all players pass, clear the table and return to last player
+
+        // Count how many players are still participating in this round
+        const stillInRound = gameState.inRound.reduce((s, v, i) => s + ((v && gameState.playerActive[i]) ? 1 : 0), 0);
+
+        // If only one player remains in the round (the last player), clear the table and give them control
+        const requiredPasses = Math.max(stillInRound - 1, 0);
+
         if (gameState.passCount >= requiredPasses) {
             playSfx('turnEnd');
             setTimeout(() => {
-                // Reset table state
+                // Reset table state but DO NOT re-enable inRound here — players rejoin when someone plays a new lead
                 gameState.lastPlay = [];
                 gameState.lastPlayCombo = null;
                 gameState.passCount = 0;
@@ -1168,7 +1186,7 @@
                 gameState.selectedCards = [];
                 document.querySelectorAll('#playerHand .card.selected').forEach(card => card.classList.remove('selected'));
 
-                // Set current player to the one who played the last cards if valid, otherwise pick next active player
+                // Set current player to the one who played the last cards if valid and still active, otherwise pick next active/inRound player
                 if (gameState.lastPlayer >= 0 && gameState.playerActive[gameState.lastPlayer]) {
                     gameState.currentPlayer = gameState.lastPlayer;
                 } else {
@@ -1176,15 +1194,17 @@
                     let found = false;
                     for (let i = 0; i < 4; i++) {
                         const cand = (gameState.currentPlayer + i) % 4;
-                        if (gameState.playerActive[cand]) {
+                        if (gameState.playerActive[cand] && gameState.inRound[cand]) {
                             gameState.currentPlayer = cand;
                             found = true;
                             break;
                         }
                     }
                     if (!found) {
-                        // fallback to player 3 (human) if no active found
-                        gameState.currentPlayer = 3;
+                        // fallback to first active player
+                        for (let i = 0; i < 4; i++) {
+                            if (gameState.playerActive[i]) { gameState.currentPlayer = i; break; }
+                        }
                     }
                 }
 
@@ -1201,7 +1221,7 @@
             }, 1500);
             return; // Don't call nextTurn() here
         }
-        
+
         nextTurn();
         updateGameInfo();
     }
@@ -1210,13 +1230,26 @@
     function nextTurn() {
         const prevPlayer = gameState.currentPlayer;
 
-        // advance to next active player
+        // advance to next active player who is still participating in the current round
         let next = gameState.currentPlayer;
+        let foundNext = false;
         for (let i = 0; i < 4; i++) {
             next = (next + 1) % 4;
-            if (gameState.playerActive[next]) {
+            if (gameState.playerActive[next] && gameState.inRound[next]) {
                 gameState.currentPlayer = next;
+                foundNext = true;
                 break;
+            }
+        }
+
+        // If no one remains inRound (shouldn't happen), fall back to next active player regardless of inRound
+        if (!foundNext) {
+            for (let i = 0; i < 4; i++) {
+                const cand = (gameState.currentPlayer + i) % 4;
+                if (gameState.playerActive[cand]) {
+                    gameState.currentPlayer = cand;
+                    break;
+                }
             }
         }
 
@@ -1272,6 +1305,8 @@
             gameState.lastPlay = playedCards;
             gameState.lastPlayCombo = analyzeCombo(playedCards);
             gameState.lastPlayer = gameState.currentPlayer;
+            // When AI leads (plays cards), all players rejoin the round
+            gameState.inRound = gameState.playerActive.map(a => !!a);
             gameState.passCount = 0;
             gameState.isFirstRound = false; // 첫 번째 라운드 종료
             playSfx('cardPlay');
@@ -1711,7 +1746,9 @@
 
                         const parts = Object.keys(groups).map(k => {
                             const g = groups[k];
-                            const badge = g.count > 1 ? `<div class="history-badge">x${g.count}</div>` : '';
+                            // UI shows one more than internal group count (fix off-by-one)
+                            const displayCount = g.count > 0 ? g.count + 1 : g.count;
+                            const badge = g.count > 1 ? `<div class="history-badge">x${displayCount}</div>` : '';
                             return `
                                 <div class="history-mini-card ${g.color}">
                                     <div class="card-value">${g.card.value}</div>
@@ -1930,7 +1967,8 @@
             passCount: 0,
             playHistory: [],
             isFirstRound: true,
-            playerActive: [true, true, true, true]
+            playerActive: [true, true, true, true],
+            inRound: [true, true, true, true]
         };
         
         // 바로 게임 시작
