@@ -426,6 +426,7 @@
         twoSkipCount: [0,0,0,0], // per-player counter for conserving non-Heart 2s in 'hell' mode
         playCounter: 0, // increments when a non-PASS play is added
         heartTwoPlayedAt: -1 // value of playCounter when Heart 2 was first played
+        ,turnId: 0 // incremented whenever currentPlayer is advanced to create a per-turn token
     };
 
     // Prevent multiple rapid new-game starts
@@ -649,6 +650,7 @@
             for (let card of gameState.players[i]) {
                 if (card.value === '3' && card.suit === '♠') {
                     gameState.currentPlayer = i;
+                    try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
                     gameState.gameStarted = true;
                     return;
                 }
@@ -1047,6 +1049,22 @@
         return remaining.every(c => c && c.value === '2');
     }
 
+    // Simple debug logger to trace turn scheduling/execution for duplicate-turn issues
+    function dbgTurn(msg, extra) {
+        try {
+            const now = new Date();
+            const ctx = {
+                t: now.toISOString(),
+                currentPlayer: gameState.currentPlayer,
+                lastTurnPlayer: typeof lastTurnPlayer !== 'undefined' ? lastTurnPlayer : null,
+                inRound: (gameState.inRound || []).slice(),
+                playerActive: (gameState.playerActive || []).slice(),
+            };
+            if (extra) Object.assign(ctx, extra);
+            console.debug('[TURN-DBG]', msg, ctx);
+        } catch (e) { try { console.debug('dbgTurn failed', e); } catch(e){} }
+    }
+
     // Returns true if a Heart '2' has been played earlier in the game
     function hasHeartTwoPlayed() {
         if (!gameState.playHistory || !Array.isArray(gameState.playHistory)) return false;
@@ -1317,6 +1335,17 @@
                 if (passBtn) passBtn.disabled = false;
                 return;
             }
+            // Prevent finishing by playing a 2 as the last card
+            const remainingAfter = hand.length - gameState.selectedCards.length;
+            if (remainingAfter === 0) {
+                const playsContainTwo = gameState.selectedCards.map(i => hand[i]).some(c => c && c.value === '2');
+                if (playsContainTwo) {
+                    showMessage('마지막으로 2를 낼 수 없습니다. 다른 조합을 선택하세요.');
+                    playBtn.disabled = false;
+                    if (passBtn) passBtn.disabled = false;
+                    return;
+                }
+            }
         } catch (e) { console.debug('playCards leave-only-twos check failed', e); }
 
         gameState.selectedCards.forEach(index => {
@@ -1371,6 +1400,12 @@
                     gameState.playerActive[3] = false;
                     gameState.players[3] = [];
                     gameState.passCount = 0;
+                    // remove from current-round participation and mark as passed
+                    try { gameState.inRound[3] = false; } catch (e) {}
+                    try { if (gameState.explicitPass) gameState.explicitPass[3] = true; } catch (e) {}
+                    // clear per-turn execution marker so next player can act
+                    try { lastTurnPlayer = -1; } catch (e) {}
+                    try { updatePlayerTransparency(); } catch (e) {}
                     renderGame();
                     updateGameInfo();
                     // Human won: ask whether to restart like Re button
@@ -1393,7 +1428,7 @@
     // Pass turn
     function passturn(isAiCall = false) {
         // Player can pass only on their own turn. AI uses passturn(true).
-        console.debug('pasturn called', { isAiCall: !!isAiCall, currentPlayer: gameState.currentPlayer, playerActive: [...gameState.playerActive], inRound: [...gameState.inRound], explicitPass: [...gameState.explicitPass] });
+        dbgTurn('pasturn called', { isAiCall: !!isAiCall, explicitPass: (gameState.explicitPass || []).slice() });
         if (!isAiCall && gameState.currentPlayer !== 3) {
             return;
         }
@@ -1505,11 +1540,15 @@
                 // Do NOT reset explicitPass here — players who passed remain excluded
                 if (chosen >= 0) {
                     gameState.currentPlayer = chosen;
+                    try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
                     gameState.inRound[chosen] = true;
                 }
 
+                // ensure new leader can act (clear execution marker)
+                try { lastTurnPlayer = -1; } catch(e) {}
+
                 // Debug: pass cycle finished
-                console.debug('passCycleEnd', { chosen, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive], currentPlayer: gameState.currentPlayer });
+                dbgTurn('passCycleEnd', { chosen });
 
                 updateActivePlayer();
                 renderGame();
@@ -1517,6 +1556,7 @@
 
                 // If the current player is AI, let them start; otherwise update player's UI
                 if (gameState.currentPlayer !== 3) {
+                    dbgTurn('scheduling AI from passCycleEnd', { delay: 1000 });
                     scheduleAiTurn(1000);
                 } else {
                     validatePlay();
@@ -1530,18 +1570,19 @@
         // executing a stale timeout after another play has already advanced the turn.
         const delay = isAiCall ? 700 : 0;
         const scheduledFrom = gameState.currentPlayer;
+        const scheduledTurn = gameState.turnId;
         setTimeout(() => {
-            // Only advance if the turn still belongs to the same player who scheduled this pass.
-            // If another player has already played (or currentPlayer changed), skip to avoid
-            // duplicate nextTurn() calls that can produce double-turn bugs.
+            // Only advance if the turn still belongs to the same player and turnId
+            // who scheduled this pass. This avoids stale timeouts causing duplicate nextTurn().
             try {
-                if (gameState.currentPlayer === scheduledFrom) {
+                if (gameState.turnId === scheduledTurn && gameState.currentPlayer === scheduledFrom) {
                     // reset lastTurnPlayer so next player may execute once
+                    dbgTurn('pasturn timeout firing; advancing nextTurn', { scheduledFrom, scheduledTurn });
                     lastTurnPlayer = -1;
                     nextTurn();
                     updateGameInfo();
                 } else {
-                    console.debug('pasturn timeout skipped (stale)', { scheduledFrom, currentPlayer: gameState.currentPlayer });
+                    dbgTurn('pasturn timeout skipped (stale)', { scheduledFrom, scheduledTurn, currentTurn: gameState.turnId });
                 }
             } catch (e) { console.debug('pasturn timeout error', e); }
         }, delay);
@@ -1550,8 +1591,9 @@
     // Next turn
     function nextTurn() {
         // prevent re-entrant nextTurn calls
+        dbgTurn('nextTurn start');
         if (nextTurnLock) {
-            console.debug('nextTurn blocked by lock');
+            dbgTurn('nextTurn blocked by lock');
             return;
         }
         nextTurnLock = true;
@@ -1581,22 +1623,25 @@
                 for (let i = 1; i <= 4; i++) {
                     const cand = (prevPlayer + i) % 4;
                     if (gameState.playerActive[cand]) {
-                        gameState.currentPlayer = cand;
+                                gameState.currentPlayer = cand;
+                                try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
                         foundNext = true;
                         break;
                     }
                 }
             } else {
                 // only prevPlayer remains active — keep them
-                gameState.currentPlayer = prevPlayer;
+                        gameState.currentPlayer = prevPlayer;
+                        try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
             }
         }
 
         if (gameState.currentPlayer !== prevPlayer) {
+            try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
             playSfx('turnEnd');
         }
 
-        console.debug('nextTurn result', { prevPlayer, currentPlayer: gameState.currentPlayer, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
+        dbgTurn('nextTurn result', { prevPlayer });
 
         if (gameState.currentPlayer === 3) {
             playSfx('myTurn');
@@ -1615,7 +1660,7 @@
         }
 
         // release lock after a short delay to allow any chained scheduling to respect ordering
-        setTimeout(() => { nextTurnLock = false; }, 10);
+        setTimeout(() => { nextTurnLock = false; dbgTurn('nextTurn lock released'); }, 10);
     }
 
     // Centralized scheduler for AI turns to avoid overlapping timeouts causing double-turns
@@ -1623,13 +1668,23 @@
     function scheduleAiTurn(delay = 700) {
         try {
             if (_lastAiTimeout) {
+                dbgTurn('scheduleAiTurn clearing previous timeout');
                 clearTimeout(_lastAiTimeout);
                 _lastAiTimeout = null;
             }
         } catch (e) { console.debug('clear lastAiTimeout failed', e); }
 
+        dbgTurn('scheduleAiTurn scheduling', { delay });
+        const scheduledTurn = gameState.turnId;
+        const scheduledPlayer = gameState.currentPlayer;
         _lastAiTimeout = setTimeout(() => {
             _lastAiTimeout = null;
+            dbgTurn('scheduled aiTurn firing', { scheduledTurn, scheduledPlayer });
+            // Ensure this scheduled AI run is still valid for the same turn token and player
+            if (gameState.turnId !== scheduledTurn || gameState.currentPlayer !== scheduledPlayer) {
+                dbgTurn('scheduled aiTurn skipped due to turn/player mismatch', { scheduledTurn, scheduledPlayer, currentTurn: gameState.turnId, currentPlayer: gameState.currentPlayer });
+                return;
+            }
             try { aiTurn(); } catch (e) { console.debug('scheduled aiTurn failed', e); }
         }, delay);
     }
@@ -1662,9 +1717,13 @@
         // choose starter
         if (winnerIndex >= 0 && gameState.playerActive[winnerIndex]) {
             gameState.currentPlayer = winnerIndex;
+            try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
         } else {
             const firstActive = gameState.playerActive.findIndex(v => v);
-            if (firstActive >= 0) gameState.currentPlayer = firstActive;
+            if (firstActive >= 0) {
+                gameState.currentPlayer = firstActive;
+                try { gameState.turnId = (gameState.turnId || 0) + 1; } catch(e) {}
+            }
         }
 
         // reset lastPlayer (no current lead yet)
@@ -1687,18 +1746,17 @@
     // AI turn
     function aiTurn() {
         // Safety check: only run if it's actually an AI's turn
-        if (gameState.currentPlayer === 3) {
-            return;
-        }
+        if (gameState.currentPlayer === 3) return;
+        dbgTurn('aiTurn entry');
 
         // prevent re-entrant AI executions
         if (aiTurnLock) {
-            console.debug('aiTurn skipped due to aiTurnLock');
+            dbgTurn('aiTurn skipped due to aiTurnLock');
             return;
         }
         // ensure this player's turn hasn't already executed
         if (lastTurnPlayer === gameState.currentPlayer) {
-            console.debug('aiTurn skipped because this player already executed this turn', gameState.currentPlayer);
+            dbgTurn('aiTurn skipped because this player already executed this turn', { player: gameState.currentPlayer });
             return;
         }
         aiTurnLock = true;
@@ -1724,6 +1782,18 @@
             // AI plays cards (capture a source position from AI player box for animation)
             playableCards.sort((a, b) => b - a);
             const playedCards = playableCards.map(index => aiHand[index]);
+
+            // Safety: do not allow AI to finish their hand by playing a '2' as the last card
+            try {
+                const remainingAfterAI = aiHand.length - playableCards.length;
+                const aiPlaysContainTwo = playedCards.some(c => c && c.value === '2');
+                if (remainingAfterAI === 0 && aiPlaysContainTwo) {
+                    // refuse to play this combination; treat as a pass instead
+                    try { aiTurnLock = false; } catch(e) {}
+                    try { passturn(true); } catch(e) { console.debug('ai passturn failed', e); }
+                    return;
+                }
+            } catch (e) { console.debug('ai last-two safety check failed', e); }
 
             // Get a rough source rect from the AI player box
             const playerBox = document.getElementById(`player${gameState.currentPlayer + 1}`);
@@ -1770,6 +1840,12 @@
                     gameState.playerActive[winner] = false;
                     gameState.players[winner] = [];
                     gameState.passCount = 0;
+                    // remove winner from current-round participation and mark as passed
+                    try { gameState.inRound[winner] = false; } catch (e) {}
+                    try { if (gameState.explicitPass) gameState.explicitPass[winner] = true; } catch (e) {}
+                    // allow next players to act
+                    try { lastTurnPlayer = -1; } catch (e) {}
+                    try { updatePlayerTransparency(); } catch (e) {}
                     renderGame();
                     updateGameInfo();
                     // If any AI finished, this is a defeat scenario for the human: ask whether to restart or continue
@@ -2848,6 +2924,7 @@
             twoSkipCount: [0,0,0,0],
             playCounter: 0,
             heartTwoPlayedAt: -1
+            ,turnId: 0
         };
         
         // Clear player's hand UI immediately when confirmed restart
