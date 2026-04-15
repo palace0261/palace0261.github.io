@@ -539,6 +539,14 @@ body {
 #playBtn{
     background-color: #ff6b6b;
 }
+#passBtn{
+    background-color: #4b5560;
+    color: #99a7b2;
+}
+#bneu{
+    color: #ebebeb;
+    background-color: #111;
+}
 .btn {
     padding: 0.6rem 1.2rem;
     border: 1px solid rgba(255, 255, 255, 0.24);
@@ -577,8 +585,8 @@ body {
 }
 
 .btn.primary:disabled {
-    background: #4b5560 !important;
-    color: #99a7b2 !important;
+    background: #efefef !important;
+    color: #090909 !important;
     border-color: rgba(255, 255, 255, 0.12);
     cursor: not-allowed;
 }
