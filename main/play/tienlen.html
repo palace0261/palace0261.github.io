@@ -434,6 +434,8 @@
     let nextTurnLock = false;
     // Lock to prevent concurrent aiTurn executions
     let aiTurnLock = false;
+    // Marker to ensure a player only executes their turn once
+    let lastTurnPlayer = -1;
 
     // Card suits and values
     const suits = ['♠', '♣', '♦', '♥'];
@@ -945,6 +947,21 @@
             return;
         }
 
+        // Prevent human from making a play that would leave only '2's in hand unless selected includes a '2'
+        try {
+            if (gameState.currentPlayer === 3) {
+                const hand = gameState.players[3];
+                const willOnlyTwos = willLeaveOnlyTwos(hand, gameState.selectedCards);
+                const includesTwo = gameState.selectedCards.map(i => hand[i]).some(c => c && c.value === '2');
+                if (willOnlyTwos && !includesTwo) {
+                    playBtn.disabled = true;
+                    if (passBtn) passBtn.disabled = false;
+                    setReason('이 동작은 마지막에 2만 남기므로 먼저 2를 내세요');
+                    return;
+                }
+            }
+        } catch (e) { console.debug('validatePlay leave-only-twos check failed', e); }
+
         // 첫 번째 라운드이고 마지막 플레이가 없을 때만 3♠ 검증
         if (gameState.isFirstRound && gameState.lastPlay.length === 0) {
             const hasSpade3 = selectedCardObjects.some(card => 
@@ -1016,6 +1033,18 @@
     // Check if card is red
     function isRed(card) {
         return card.suit === '♦' || card.suit === '♥';
+    }
+
+    // Return true if removing indices (candidate) from hand will leave only '2' cards
+    function willLeaveOnlyTwos(hand, candidateIndices) {
+        // build a set of indices to remove
+        const remove = new Set(candidateIndices || []);
+        const remaining = [];
+        for (let i = 0; i < hand.length; i++) {
+            if (!remove.has(i)) remaining.push(hand[i]);
+        }
+        if (remaining.length === 0) return false; // finishing hand is handled elsewhere
+        return remaining.every(c => c && c.value === '2');
     }
 
     // Returns true if a Heart '2' has been played earlier in the game
@@ -1278,6 +1307,18 @@
 
         // Remove cards from player's hand
         gameState.selectedCards.sort((a, b) => b - a); // Sort in descending order
+        // Prevent playing a non-2 that would leave only 2s in hand (safety)
+        try {
+            const hand = gameState.players[3];
+            const includesTwo = gameState.selectedCards.map(i => hand[i]).some(c => c && c.value === '2');
+            if (willLeaveOnlyTwos(hand, gameState.selectedCards) && !includesTwo) {
+                showMessage('이 동작은 마지막에 2만 남기므로 먼저 2를 내세요');
+                playBtn.disabled = false;
+                if (passBtn) passBtn.disabled = false;
+                return;
+            }
+        } catch (e) { console.debug('playCards leave-only-twos check failed', e); }
+
         gameState.selectedCards.forEach(index => {
             gameState.players[3].splice(index, 1);
         });
@@ -1316,6 +1357,9 @@
 
             // 플레이 히스토리에 추가 (한 번만 추가되도록 위의 중복을 제거함)
             addToPlayHistory(selectedCardObjects, 3);
+
+            // Mark human as having executed this turn to prevent duplicate actions
+            lastTurnPlayer = 3;
 
             // Animate the played cards into the center, then update UI / proceed
             animateLastPlay(selectedCardObjects, 3, sourceRects, () => {
@@ -1359,6 +1403,9 @@
             nextTurn();
             return;
         }
+
+        // Mark this player's turn as executed (prevents duplicate turn execution)
+        try { lastTurnPlayer = gameState.currentPlayer; } catch(e) {}
 
         // Mark this player as having left the current round
         gameState.inRound[gameState.currentPlayer] = false;
@@ -1489,6 +1536,8 @@
             // duplicate nextTurn() calls that can produce double-turn bugs.
             try {
                 if (gameState.currentPlayer === scheduledFrom) {
+                    // reset lastTurnPlayer so next player may execute once
+                    lastTurnPlayer = -1;
                     nextTurn();
                     updateGameInfo();
                 } else {
@@ -1553,6 +1602,8 @@
             playSfx('myTurn');
         }
         
+        // reset per-turn execution marker so the new currentPlayer may act once
+        lastTurnPlayer = -1;
         updateActivePlayer();
         
         // Only call AI turn if it's actually an AI's turn
@@ -1645,7 +1696,14 @@
             console.debug('aiTurn skipped due to aiTurnLock');
             return;
         }
+        // ensure this player's turn hasn't already executed
+        if (lastTurnPlayer === gameState.currentPlayer) {
+            console.debug('aiTurn skipped because this player already executed this turn', gameState.currentPlayer);
+            return;
+        }
         aiTurnLock = true;
+        // mark as executed for this turn
+        lastTurnPlayer = gameState.currentPlayer;
 
         // Skip if player inactive
         if (!gameState.playerActive[gameState.currentPlayer]) {
@@ -2009,7 +2067,9 @@
                 const combo = analyzeCombo([hand[i]]);
                 if (canBeat(combo, targetCombo)) candidates.push([i]);
             }
-            return chooseSafe(candidates) || [];
+            // filter out candidates that would leave only 2s unless candidate itself includes a 2
+            const filtered = candidates.filter(c => !(willLeaveOnlyTwos(hand, c) && !containsTwo(c)));
+            return chooseSafe(filtered) || [];
         }
 
         // Pairs
@@ -2020,7 +2080,8 @@
                     if (canBeat(combo, targetCombo)) candidates.push([i, i + 1]);
                 }
             }
-            return chooseSafe(candidates) || [];
+            const filteredP = candidates.filter(c => !(willLeaveOnlyTwos(hand, c) && !containsTwo(c)));
+            return chooseSafe(filteredP) || [];
         }
 
         // Triples
@@ -2031,7 +2092,8 @@
                     if (canBeat(combo, targetCombo)) candidates.push([i, i + 1, i + 2]);
                 }
             }
-            return chooseSafe(candidates) || [];
+            const filteredT = candidates.filter(c => !(willLeaveOnlyTwos(hand, c) && !containsTwo(c)));
+            return chooseSafe(filteredT) || [];
         }
 
         // Straights
@@ -2059,7 +2121,8 @@
                     }
                 }
             }
-            return chooseSafe(candidates) || [];
+            const filteredS = candidates.filter(c => !(willLeaveOnlyTwos(hand, c) && !containsTwo(c)));
+            return chooseSafe(filteredS) || [];
         }
 
         return [];
