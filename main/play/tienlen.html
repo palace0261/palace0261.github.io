@@ -56,6 +56,40 @@
             animation: cardPop 280ms ease forwards;
         }
 
+        /* Controls layout: left (Re), center (Play), right (Pass) */
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .controls .left,
+        .controls .center,
+        .controls .right {
+            flex: 1 1 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .controls .left { justify-content: flex-start; }
+        .controls .center { justify-content: center; }
+        .controls .right { justify-content: flex-end; }
+
+        /* Make sure primary button doesn't stretch too wide */
+        .controls .center .btn {
+            min-width: 160px;
+        }
+
+        /* Play history styling */
+        .last-play-list { max-width: 260px; margin: 0 auto; }
+        .history-item { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .history-cards { display: flex; gap: 0.4rem; align-items: center; }
+        .history-card { background: #222; color: #fff; padding: 0.2rem 0.4rem; border-radius: 3px; font-size: 0.85rem; }
+        .history-card.red { background: #b71c1c; }
+        .history-pass { background: #333; color: #fff; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+
         @keyframes cardPop {
             0% { transform: scale(1); }
             50% { transform: scale(1.15); }
@@ -129,10 +163,10 @@
             <div class="difficulty-select" aria-label="난이도 선택">
                 <p class="difficulty-title">난이도 선택</p>
                 <div class="difficulty-options">
-                    <button id="difficultyEasy" class="btn difficulty-btn active" onclick="setDifficulty('easy')">쉬움</button>
-                    <button id="difficultyMedium" class="btn difficulty-btn" onclick="setDifficulty('medium')">보통</button>
+                    <button id="difficultyEasy" class="btn difficulty-btn active" onclick="setDifficulty('easy')">보통</button>
+                    <button id="difficultyMedium" class="btn difficulty-btn" onclick="setDifficulty('medium')">어려움</button>
                 </div>
-                <p id="difficultyDescription" class="difficulty-description">현재: 쉬움 - 기본 AI 난이도</p>
+                <p id="difficultyDescription" class="difficulty-description">현재: 보통 - 기본 AI 난이도</p>
             </div>
       <button class="btn primary start-game-btn"
       style="font-size:calc(1.5rem - 0.25em); padding: 1.5rem 3rem;" 
@@ -191,17 +225,17 @@
       <div class="hand-cards" id="playerHand">
         <!-- Player cards will be inserted here -->
       </div>
-      <div class="controls">
-        <div>
-        <button class="btn primary" id="playBtn" onclick="playCards()" disabled>Play a card</button>
-        <button class="btn secondary" id="passBtn" onclick="passturn()">Pass</button>
-        </div>
-        <!-- <button class="btn secondary" onclick="clearSelection()">선택 해제</button> -->
-         <div>
-        <button class="btn neutral" onclick="newGame()">Re</button>
-        </div>
-
-      </div>
+            <div class="controls">
+                <div class="left">
+                    <button class="btn neutral" onclick="newGame()">Re</button>
+                </div>
+                <div class="center">
+                    <button class="btn primary" id="playBtn" onclick="playCards()" disabled>Play a card</button>
+                </div>
+                <div class="right">
+                    <button class="btn secondary" id="passBtn" onclick="passturn()">Pass</button>
+                </div>
+            </div>
     </div>
   </div>
 
@@ -238,8 +272,9 @@
     let gameDifficulty = 'easy';
 
     function setDifficulty(level) {
+        // Show UI selection and description per clicked button,
+        // but internally keep behavior identical to 'easy' as requested.
         const normalized = level === 'medium' ? 'medium' : 'easy';
-        gameDifficulty = normalized;
 
         const easyBtn = document.getElementById('difficultyEasy');
         const mediumBtn = document.getElementById('difficultyMedium');
@@ -250,9 +285,12 @@
 
         if (description) {
             description.textContent = normalized === 'medium'
-                ? '현재: 보통 - 고카드(A/2)와 강한 페어를 조금 더 아껴서 플레이'
-                : '현재: 쉬움 - 기본 AI 난이도';
+                ? '현재: 어려움(보통과 동일 동작) - AI 행동은 보통과 동일합니다'
+                : '현재: 보통 - 기본 AI 난이도';
         }
+
+        // Internally treat medium as easy to keep identical behavior
+        gameDifficulty = 'easy';
     }
 
     // Lightweight SFX via Web Audio API
@@ -1010,19 +1048,16 @@
         document.querySelectorAll('#playerHand .card.selected').forEach(card => {
             card.classList.remove('selected');
         });
-        
-        // 플레이 히스토리에 추가
-        addToPlayHistory(selectedCardObjects, 3);
 
         // Check win condition BEFORE UI updates
         const playerWon = gameState.players[3].length === 0;
         
-            // Clear selected indices from UI
+            // Clear selected indices from UI (defensive)
             document.querySelectorAll('#playerHand .card.selected').forEach(card => {
                 card.classList.remove('selected');
             });
 
-            // 플레이 히스토리에 추가
+            // 플레이 히스토리에 추가 (한 번만 추가되도록 위의 중복을 제거함)
             addToPlayHistory(selectedCardObjects, 3);
 
             // Animate the played cards into the center, then update UI / proceed
@@ -1055,6 +1090,9 @@
 
         gameState.passCount++;
 
+        // Record pass in play history
+        addToPlayHistory('PASS', gameState.currentPlayer);
+
         // Round resets when every other active player passed.
         const activePlayerCount = gameState.playerActive.filter(Boolean).length;
         const requiredPasses = Math.max(activePlayerCount - 1, 1);
@@ -1066,22 +1104,43 @@
         if (gameState.passCount >= requiredPasses) {
             playSfx('turnEnd');
             setTimeout(() => {
+                // Reset table state
                 gameState.lastPlay = [];
                 gameState.lastPlayCombo = null;
                 gameState.passCount = 0;
 
-                // Set current player to the one who played the last cards
-                gameState.currentPlayer = gameState.lastPlayer;
+                // Clear any selected cards (prevent stale indices causing errors)
+                gameState.selectedCards = [];
+                document.querySelectorAll('#playerHand .card.selected').forEach(card => card.classList.remove('selected'));
+
+                // Set current player to the one who played the last cards if valid, otherwise pick next active player
+                if (gameState.lastPlayer >= 0 && gameState.playerActive[gameState.lastPlayer]) {
+                    gameState.currentPlayer = gameState.lastPlayer;
+                } else {
+                    // find next active player starting from current
+                    let found = false;
+                    for (let i = 0; i < 4; i++) {
+                        const cand = (gameState.currentPlayer + i) % 4;
+                        if (gameState.playerActive[cand]) {
+                            gameState.currentPlayer = cand;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        // fallback to player 3 (human) if no active found
+                        gameState.currentPlayer = 3;
+                    }
+                }
 
                 updateActivePlayer();
                 renderGame();
                 updateGameInfo();
 
-                // If the last player was AI, let them start
+                // If the current player is AI, let them start; otherwise update player's UI
                 if (gameState.currentPlayer !== 3) {
                     setTimeout(() => aiTurn(), 1000);
                 } else {
-                    // Update validation for player's turn after clearing
                     validatePlay();
                 }
             }, 1500);
@@ -1551,11 +1610,20 @@
     // 플레이 히스토리에 추가하는 함수
     function addToPlayHistory(cards, playerIndex) {
         const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
-        const historyItem = {
-            cards: [...cards],
-            player: playerNames[playerIndex],
-            playerIndex: playerIndex
-        };
+        let historyItem;
+        if (cards === 'PASS') {
+            historyItem = {
+                cards: 'PASS',
+                player: playerNames[playerIndex],
+                playerIndex: playerIndex
+            };
+        } else {
+            historyItem = {
+                cards: Array.isArray(cards) ? [...cards] : [],
+                player: playerNames[playerIndex],
+                playerIndex: playerIndex
+            };
+        }
         
         // 최신 플레이를 맨 앞에 추가
         gameState.playHistory.unshift(historyItem);
@@ -1581,21 +1649,28 @@
         gameState.playHistory.forEach(item => {
             const historyDiv = document.createElement('div');
             historyDiv.className = 'history-item';
-            
+
             const cardsDiv = document.createElement('div');
             cardsDiv.className = 'history-cards';
-            
-            item.cards.forEach(card => {
-                const cardDiv = document.createElement('div');
-                cardDiv.className = `history-card ${card.suit === '♦' || card.suit === '♥' ? 'red' : 'black'}`;
-                cardDiv.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
-                cardsDiv.appendChild(cardDiv);
-            });
-            
+
+            if (item.cards === 'PASS') {
+                const passDiv = document.createElement('div');
+                passDiv.className = 'history-pass';
+                passDiv.textContent = '🚫 패스';
+                cardsDiv.appendChild(passDiv);
+            } else {
+                item.cards.forEach(card => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = `history-card ${card.suit === '♦' || card.suit === '♥' ? 'red' : 'black'}`;
+                    cardDiv.innerHTML = `<div>${card.value}</div><div>${card.suit}</div>`;
+                    cardsDiv.appendChild(cardDiv);
+                });
+            }
+
             const playerDiv = document.createElement('div');
             playerDiv.className = 'history-player';
             playerDiv.textContent = item.player;
-            
+
             historyDiv.appendChild(cardsDiv);
             historyDiv.appendChild(playerDiv);
             container.appendChild(historyDiv);
