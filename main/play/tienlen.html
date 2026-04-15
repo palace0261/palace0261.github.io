@@ -59,11 +59,16 @@
         // set a fake lastPlay and treat this as a lead
         gameState.lastPlay = [{ value: 'K', suit: '♠', strength: valueOrder['K'], suitStrength: suitOrder['♠'] }];
         gameState.lastPlayCombo = analyzeCombo(gameState.lastPlay) || null;
+        const prevLast = gameState.lastPlayer;
+        // set lastPlayer to this player
         gameState.lastPlayer = playerIndex;
-        // when someone leads, everyone re-enters round
-        gameState.inRound = gameState.playerActive.map(a => !!a);
-        gameState.explicitPass = gameState.playerActive.map(() => false);
-        gameState.passCount = 0;
+        // when the SAME player who was previously the last player plays again, start a new round and rejoin passers
+        if (prevLast === playerIndex) {
+            gameState.inRound = gameState.playerActive.map(a => !!a);
+            gameState.explicitPass = gameState.playerActive.map(() => false);
+            gameState.passCount = 0;
+            try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+        }
         try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
         console.debug('simulatePlayBy after lead', { currentPlayer: playerIndex, inRound: [...gameState.inRound], explicitPass: [...gameState.explicitPass], passCount: gameState.passCount });
         // advance to next
@@ -1197,12 +1202,15 @@
 
         gameState.lastPlay = selectedCardObjects;
         gameState.lastPlayCombo = combo;
+        const prevLast = gameState.lastPlayer;
         gameState.lastPlayer = 3;
-        // When someone leads (plays cards), all players rejoin the round
-        gameState.inRound = gameState.playerActive.map(a => !!a);
-        // reset explicit pass markers since a new lead resets pass state
-        gameState.explicitPass = gameState.playerActive.map(() => false);
-        try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+        // If the player who was previously the last player plays again, this constitutes a new lead: rejoin passed players
+        if (prevLast === 3) {
+            gameState.inRound = gameState.playerActive.map(a => !!a);
+            gameState.explicitPass = gameState.playerActive.map(() => false);
+            try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+            gameState.passCount = 0;
+        }
         gameState.selectedCards = [];
         gameState.passCount = 0;
         gameState.isFirstRound = false; // 첫 번째 라운드 종료
@@ -1328,8 +1336,7 @@
 
                 // Only the chosen leader should remain inRound until they lead again
                 gameState.inRound = gameState.playerActive.map(() => false);
-                // reset explicit pass markers when pass cycle ends
-                gameState.explicitPass = gameState.playerActive.map(() => false);
+                // Do NOT reset explicitPass here — players who passed remain excluded
                 if (chosen >= 0) {
                     gameState.currentPlayer = chosen;
                     gameState.inRound[chosen] = true;
@@ -1362,37 +1369,34 @@
 
     // Next turn
     function nextTurn() {
-        // Prevent concurrent execution which can cause inconsistent currentPlayer
-        if (nextTurnLock) {
-            console.debug('nextTurn skipped due to lock');
-            return;
-        }
-        nextTurnLock = true;
-        try {
-            const prevPlayer = gameState.currentPlayer;
+        const prevPlayer = gameState.currentPlayer;
 
-            // Start searching from the next position after the previous player
-            let foundNext = false;
-            for (let step = 1; step <= 4; step++) {
-                const cand = (prevPlayer + step) % 4;
-                if (gameState.playerActive[cand] && gameState.inRound[cand]) {
+        // advance to next active player who is still participating in the current round
+        let next = gameState.currentPlayer;
+        let foundNext = false;
+        for (let i = 0; i < 4; i++) {
+            next = (next + 1) % 4;
+            // Strict: only players still marked inRound participate (explicit passes are excluded)
+            if (gameState.playerActive[next] && gameState.inRound[next]) {
+                gameState.currentPlayer = next;
+                foundNext = true;
+                break;
+            }
+        }
+
+        // If no one remains inRound (shouldn't happen), fall back to next active player regardless of inRound
+        if (!foundNext) {
+            for (let i = 0; i < 4; i++) {
+                const cand = (gameState.currentPlayer + i) % 4;
+                if (gameState.playerActive[cand]) {
                     gameState.currentPlayer = cand;
-                    foundNext = true;
                     break;
                 }
             }
+        }
 
-            // If no one remains inRound, fall back to first overall active player
-            if (!foundNext) {
-                const firstActive = gameState.playerActive.findIndex(v => v);
-                if (firstActive >= 0) gameState.currentPlayer = firstActive;
-            }
-
-            if (gameState.currentPlayer !== prevPlayer) {
-                playSfx('turnEnd');
-            }
-        } finally {
-            nextTurnLock = false;
+        if (gameState.currentPlayer !== prevPlayer) {
+            playSfx('turnEnd');
         }
 
         console.debug('nextTurn result', { prevPlayer, currentPlayer: gameState.currentPlayer, inRound: [...gameState.inRound], playerActive: [...gameState.playerActive] });
@@ -1492,15 +1496,18 @@
                 aiHand.splice(index, 1);
             });
 
+            const prevLastPlayer = gameState.lastPlayer;
             gameState.lastPlay = playedCards;
             gameState.lastPlayCombo = analyzeCombo(playedCards);
+            // set lastPlayer to current AI
             gameState.lastPlayer = gameState.currentPlayer;
-            // When AI leads (plays cards), all players rejoin the round
-            gameState.inRound = gameState.playerActive.map(a => !!a);
-            gameState.passCount = 0;
-            // ensure any previous pass state is cleared visually
-            gameState.explicitPass = gameState.playerActive.map(() => false);
-            try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+            // Only if this AI was ALSO the previous lastPlayer, treat as new lead and rejoin passers
+            if (prevLastPlayer === gameState.currentPlayer) {
+                gameState.inRound = gameState.playerActive.map(a => !!a);
+                gameState.explicitPass = gameState.playerActive.map(() => false);
+                try { updatePlayerTransparency(); } catch (e) { console.debug('updatePlayerTransparency failed', e); }
+                gameState.passCount = 0;
+            }
             gameState.isFirstRound = false; // 첫 번째 라운드 종료
             playSfx('cardPlay');
 
