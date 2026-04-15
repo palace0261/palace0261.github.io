@@ -210,6 +210,36 @@
             50% { transform: scale(1.15); }
             100% { transform: scale(1); }
         }
+        /* Difficulty indicators applied to center-area instead of whole body */
+        .center-area.difficulty-hard {
+            transition: background-color 240ms ease, box-shadow 240ms ease;
+            background-color: rgb(0 0 0 / 58%); /* slightly darker center */
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.35);
+        }
+        .center-area.difficulty-hell {
+            transition: background-color 240ms ease, box-shadow 240ms ease;
+            background-color: rgba(90, 10, 10, 0.72); /* dark red tint */
+            box-shadow: inset 0 0 120px rgba(60,10,10,0.7);
+            color-scheme: dark;
+        }
+        /* Keep center content readable with subtle border */
+        .center-area.difficulty-hard .last-play,
+        .center-area.difficulty-hell .last-play {
+            background: rgba(255,255,255,0.02);
+            border-radius: 8px;
+            padding: 6px;
+        }
+        /* Style other players (exclude human #player4) when difficulty is hard/hell */
+        body.difficulty-hard .opponents .player:not(#player4) {
+            background: rgb(0 0 0 / 54%);
+            transition: background 240ms ease, opacity 240ms ease;
+            border-radius: 6px;
+        }
+        body.difficulty-hell .opponents .player:not(#player4) {
+            background: rgba(90, 10, 10, 0.28);
+            transition: background 240ms ease, opacity 240ms ease;
+            border-radius: 6px;
+        }
     </style>
 <!-- /head -->
 </head>
@@ -275,8 +305,9 @@
             <div class="difficulty-select" aria-label="난이도 선택">
                 <p class="difficulty-title">난이도 선택</p>
                 <div class="difficulty-options">
-                    <button id="difficultyEasy" class="btn difficulty-btn active" onclick="setDifficulty('easy')">보통</button>
-                    <button id="difficultyMedium" class="btn difficulty-btn" onclick="setDifficulty('medium')">어려움</button>
+                    <button id="difficultyEasy" class="btn difficulty-btn active" onclick="setDifficulty('easy')">🍌 보통</button>
+                    <button id="difficultyHard" class="btn difficulty-btn" onclick="setDifficulty('hard')">🤔 어려움</button>
+                    <button id="difficultyHell" class="btn difficulty-btn" onclick="setDifficulty('hell')">💀 지옥</button>
                 </div>
                 <p id="difficultyDescription" class="difficulty-description">현재: 보통 - 기본 AI 난이도</p>
             </div>
@@ -366,6 +397,15 @@
     <button class="btn primary" onclick="hideMessage()" style="margin-top: 1rem;">확인</button>
   </div>
 
+    <!-- Restart Confirmation Dialog -->
+    <div class="message" id="restartConfirm" style="display:none;">
+        <p id="restartConfirmText">게임을 새로시작합니다. 클릭 후 게임을 재시작하겠습니까?</p>
+        <div style="display:flex; gap:0.75rem; margin-top:1rem;">
+            <button class="btn primary" id="restartYes">Yes</button>
+            <button class="btn" id="restartNo">No</button>
+        </div>
+    </div>
+
   <script>
     // Game State
     let gameState = {
@@ -399,25 +439,36 @@
     const DEBUG = window.location.search.includes('debug=1');
 
     function setDifficulty(level) {
-        // Show UI selection and description per clicked button,
-        // but internally keep behavior identical to 'easy' as requested.
-        const normalized = level === 'medium' ? 'medium' : 'easy';
-
+        // level: 'easy' | 'hard' | 'hell'
         const easyBtn = document.getElementById('difficultyEasy');
-        const mediumBtn = document.getElementById('difficultyMedium');
+        const hardBtn = document.getElementById('difficultyHard');
+        const hellBtn = document.getElementById('difficultyHell');
         const description = document.getElementById('difficultyDescription');
 
-        if (easyBtn) easyBtn.classList.toggle('active', normalized === 'easy');
-        if (mediumBtn) mediumBtn.classList.toggle('active', normalized === 'medium');
+        if (easyBtn) easyBtn.classList.toggle('active', level === 'easy');
+        if (hardBtn) hardBtn.classList.toggle('active', level === 'hard');
+        if (hellBtn) hellBtn.classList.toggle('active', level === 'hell');
 
         if (description) {
-            description.textContent = normalized === 'medium'
-                ? '현재: 어려움(보통과 동일 동작) - AI 행동은 보통과 동일합니다'
-                : '현재: 보통 - 기본 AI 난이도';
+            if (level === 'hard') description.textContent = '현재: 어려움 - AI가 약간 더 신중하게 행동합니다';
+            else if (level === 'hell') description.textContent = '현재: 지옥 - AI가 깊게 계산하여 최적의 선택을 시도합니다';
+            else description.textContent = '현재: 보통 - 기본 AI 난이도';
         }
 
-        // Internally treat medium as easy to keep identical behavior
-        gameDifficulty = 'easy';
+        gameDifficulty = (level === 'hard' || level === 'hell') ? level : 'easy';
+        // update center-area class so difficulty tint shows on the central play area
+        try {
+            const center = document.querySelector('.center-area');
+            if (center) {
+                center.classList.toggle('difficulty-hard', gameDifficulty === 'hard');
+                center.classList.toggle('difficulty-hell', gameDifficulty === 'hell');
+                center.classList.toggle('difficulty-easy', gameDifficulty === 'easy');
+            }
+            // also toggle body classes so we can style other UI parts (players) based on difficulty
+            document.body.classList.toggle('difficulty-hard', gameDifficulty === 'hard');
+            document.body.classList.toggle('difficulty-hell', gameDifficulty === 'hell');
+            document.body.classList.toggle('difficulty-easy', gameDifficulty === 'easy');
+        } catch (e) {}
     }
 
     // Lightweight SFX via Web Audio API
@@ -1247,20 +1298,16 @@
                     gameState.passCount = 0;
                     renderGame();
                     updateGameInfo();
-
-                    // If only one active player remains, show final victory
-                    const activeCount = gameState.playerActive.filter(Boolean).length;
-                    if (activeCount === 1) {
-                        const winnerIndex = gameState.playerActive.findIndex(v => v);
-                        const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
-                        setTimeout(() => {
-                            showVictoryMessage(`${playerNames[winnerIndex]}님이 최종 우승했습니다!`, winnerIndex === 3);
-                        }, 300);
-                    } else {
-                        setTimeout(() => {
-                            nextTurn();
-                        }, 300);
-                    }
+                    // Human won: ask whether to restart like Re button
+                    const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
+                    setTimeout(() => {
+                        showRestartConfirm(`${playerNames[3]}님이 우승했습니다. 게임을 새로 시작하시겠습니까?`, () => {
+                            newGame(true);
+                        }, () => {
+                            // If user declines restart, show victory message and continue normal flow
+                            showVictoryMessage(`${playerNames[3]}님이 우승했습니다!`, true);
+                        });
+                    }, 300);
                 } else {
                     // check if round ended (everyone else passed)
                     if (!checkRoundEnd()) nextTurn();
@@ -1532,21 +1579,34 @@
                     gameState.passCount = 0;
                     renderGame();
                     updateGameInfo();
+                    // If any AI finished, this is a defeat scenario for the human: ask whether to restart or continue
+                    const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
+                    const anyAIDone = [0,1,2].some(i => gameState.players[i].length === 0);
+                    const allAIDone = [0,1,2].every(i => gameState.players[i].length === 0);
 
-                    // If only one active player remains, show final victory
-                    const activeCount = gameState.playerActive.filter(Boolean).length;
-                    if (activeCount === 1) {
-                        const winnerIndex = gameState.playerActive.findIndex(v => v);
-                        const playerNames = ['AI 1', 'AI 2', 'AI 3', '나'];
-                        setTimeout(() => {
-                            showVictoryMessage(`${playerNames[winnerIndex]}님이 최종 우승했습니다!`, winnerIndex === 3);
-                        }, 300);
-                    } else {
-                        // Continue with next active player
-                        setTimeout(() => {
-                            nextTurn();
-                        }, 300);
-                    }
+                    setTimeout(() => {
+                        const msg = anyAIDone
+                            ? `${playerNames[winner]}님이 카드를 모두 소모했습니다. 당신은 패배했습니다. 게임을 새로 시작하시겠습니까?` 
+                            : `${playerNames[winner]}님이 카드를 모두 소모했습니다.`;
+
+                        showRestartConfirm(msg, () => {
+                            // Yes -> restart immediately
+                            newGame(true);
+                        }, () => {
+                            // No -> continue game if possible
+                            const activeCount = gameState.playerActive.filter(Boolean).length;
+                            if (activeCount === 1) {
+                                const winnerIndex = gameState.playerActive.findIndex(v => v);
+                                setTimeout(() => {
+                                    showVictoryMessage(`${playerNames[winnerIndex]}님이 최종 우승했습니다!`, winnerIndex === 3);
+                                }, 200);
+                            } else {
+                                setTimeout(() => {
+                                    nextTurn();
+                                }, 200);
+                            }
+                        });
+                    }, 300);
                 } else {
                     // check if round ended after AI play
                     if (!checkRoundEnd()) nextTurn();
@@ -1565,87 +1625,135 @@
         if (gameState.lastPlay.length === 0) {
             return findBestStartingCombo(hand);
         }
-        
+
         const targetCombo = gameState.lastPlayCombo;
-        
-        // Try to find matching combo that can beat the last play
-        for (let i = 0; i < hand.length; i++) {
-            if (targetCombo.type === 'single') {
-                const combo = analyzeCombo([hand[i]]);
-                if (canBeat(combo, targetCombo)) {
-                    return [i];
-                }
-            }
+
+        // Helper: check whether a candidate indices include A or 2
+        function containsHighCard(indices) {
+            return indices.some(i => hand[i] && hand[i].strength >= 14); // A(14) or 2(15)
         }
-        
-        // Try pairs
+
+        // Choose among candidates according to difficulty
+        function chooseComboFromCandidates(candidates) {
+            if (!candidates || candidates.length === 0) return [];
+
+            // Deduplicate by string key
+            const uniq = [];
+            const seen = new Set();
+            for (const c of candidates) {
+                const key = c.join(',');
+                if (!seen.has(key)) { seen.add(key); uniq.push(c); }
+            }
+
+            // HARD: be conservative - prefer combos that DON'T use A/2, prefer lower strength
+            if (gameDifficulty === 'hard') {
+                const withoutHigh = uniq.filter(c => !containsHighCard(c));
+                const pool = withoutHigh.length ? withoutHigh : uniq;
+                // sort by max strength ascending, then by length ascending
+                pool.sort((a, b) => {
+                    const aMax = Math.max(...a.map(i => hand[i].strength));
+                    const bMax = Math.max(...b.map(i => hand[i].strength));
+                    if (aMax !== bMax) return aMax - bMax;
+                    return a.length - b.length;
+                });
+                // small chance to pass instead of spending an A (simulate thinking/conserving)
+                const top = pool[0];
+                if (top && containsHighCard(top) && Math.random() < 0.45) return [];
+                return top;
+            }
+
+            // HELL: deeper thinking - prefer longer combos (reduce moves), avoid using 2 unless necessary
+            if (gameDifficulty === 'hell') {
+                // prefer combos with more cards first (triples/straights), then lower max strength
+                uniq.sort((a, b) => {
+                    if (b.length !== a.length) return b.length - a.length; // longer first
+                    const aMax = Math.max(...a.map(i => hand[i].strength));
+                    const bMax = Math.max(...b.map(i => hand[i].strength));
+                    if (aMax !== bMax) return aMax - bMax; // prefer lower max
+                    return a.reduce((s, i) => s + hand[i].strength, 0) - b.reduce((s, i) => s + hand[i].strength, 0);
+                });
+                // if top uses 2 and an alternative exists without 2, pick the alternative
+                const top = uniq[0];
+                if (containsHighCard(top) && top.some(i => hand[i].strength === 15)) {
+                    const alt = uniq.find(c => !c.some(i => hand[i].strength === 15));
+                    if (alt) return alt;
+                }
+                return top;
+            }
+
+            // EASY/default: pick lowest-strength candidate (greedy)
+            uniq.sort((a, b) => {
+                const aMax = Math.max(...a.map(i => hand[i].strength));
+                const bMax = Math.max(...b.map(i => hand[i].strength));
+                if (aMax !== bMax) return aMax - bMax;
+                return a.length - b.length;
+            });
+            return uniq[0];
+        }
+
+        // collect candidates per combo type
+        const candidates = [];
+
+        // Singles
+        if (targetCombo.type === 'single') {
+            for (let i = 0; i < hand.length; i++) {
+                const combo = analyzeCombo([hand[i]]);
+                if (canBeat(combo, targetCombo)) candidates.push([i]);
+            }
+            return chooseComboFromCandidates(candidates) || [];
+        }
+
+        // Pairs
         if (targetCombo.type === 'pair') {
             for (let i = 0; i < hand.length - 1; i++) {
                 if (hand[i].strength === hand[i + 1].strength && isSameColor(hand[i], hand[i + 1])) {
                     const combo = analyzeCombo([hand[i], hand[i + 1]]);
-                    if (canBeat(combo, targetCombo)) {
-                        return [i, i + 1];
-                    }
+                    if (canBeat(combo, targetCombo)) candidates.push([i, i + 1]);
                 }
             }
+            return chooseComboFromCandidates(candidates) || [];
         }
-        
-        // Try triples
+
+        // Triples
         if (targetCombo.type === 'triple') {
             for (let i = 0; i < hand.length - 2; i++) {
                 if (hand[i].strength === hand[i + 1].strength && hand[i + 1].strength === hand[i + 2].strength) {
                     const combo = analyzeCombo([hand[i], hand[i + 1], hand[i + 2]]);
-                    if (canBeat(combo, targetCombo)) {
-                        return [i, i + 1, i + 2];
-                    }
+                    if (canBeat(combo, targetCombo)) candidates.push([i, i + 1, i + 2]);
                 }
             }
+            return chooseComboFromCandidates(candidates) || [];
         }
-        
-        // Try straights
+
+        // Straights
         if (targetCombo.type === 'straight') {
             for (let start = 0; start < hand.length - 2; start++) {
-                // Skip if starting card is a '2' (straights cannot contain 2s)
                 if (hand[start].value === '2') continue;
-
                 for (let length = targetCombo.cards.length; length <= Math.min(13, hand.length - start); length++) {
                     const straight = [];
-
-                    // Check if we can form a straight of same suit AND same color
                     let validStraight = true;
                     const firstColor = isRed(hand[start]) ? 'red' : 'black';
                     const firstSuit = hand[start].suit;
-
                     for (let i = 0; i < length; i++) {
                         const cardIndex = start + i;
-                        if (cardIndex < hand.length && 
-                            hand[cardIndex].strength === hand[start].strength + i &&
-                            hand[cardIndex].value !== '2') {  // Cannot include 2s in straights
+                        if (cardIndex < hand.length && hand[cardIndex].strength === hand[start].strength + i && hand[cardIndex].value !== '2') {
                             const currentColor = isRed(hand[cardIndex]) ? 'red' : 'black';
                             const currentSuit = hand[cardIndex].suit;
                             if (currentColor === firstColor && currentSuit === firstSuit) {
                                 straight.push(cardIndex);
-                            } else {
-                                validStraight = false;
-                                break;
-                            }
-                        } else {
-                            validStraight = false;
-                            break;
-                        }
+                            } else { validStraight = false; break; }
+                        } else { validStraight = false; break; }
                     }
-
                     if (validStraight && straight.length >= 3) {
                         const combo = analyzeCombo(straight.map(idx => hand[idx]));
-                        if (combo.valid && combo.type === 'straight' && canBeat(combo, targetCombo)) {
-                            return straight;
-                        }
+                        if (combo.valid && combo.type === 'straight' && canBeat(combo, targetCombo)) candidates.push(straight);
                     }
                 }
             }
+            return chooseComboFromCandidates(candidates) || [];
         }
-        
-        return []; // Can't play, will pass
+
+        return [];
     }
     
     // Find best starting combo for AI when starting new round
@@ -1738,26 +1846,34 @@
 
         let candidateCombos = possibleCombos;
 
-        if (gameDifficulty === 'medium') {
+        if (gameDifficulty === 'hard') {
             const conservativeCombos = possibleCombos.filter(item => {
                 const combo = item.combo;
                 if (!combo || !combo.valid) return false;
 
-                // Keep game from becoming too hard: only preserve high cards in early-mid hand sizes.
-                if (hand.length <= 5) return true;
+                if (hand.length <= 5) return true; // near end - be willing to play
 
-                // In medium mode, avoid spending A/2 as opening singles if alternatives exist.
+                // In hard mode, avoid opening with single A/2 if alternatives exist
                 if (combo.type === 'single' && combo.strength >= 14) return false;
-
-                // Example rule from request: avoid playing A pair too early.
-                if (combo.type === 'pair' && combo.strength >= 14) return false;
-
+                if ((combo.type === 'pair' || combo.type === 'triple') && combo.strength >= 14) return false;
                 return true;
             });
 
-            if (conservativeCombos.length > 0) {
-                candidateCombos = conservativeCombos;
-            }
+            if (conservativeCombos.length > 0) candidateCombos = conservativeCombos;
+        }
+
+        if (gameDifficulty === 'hell') {
+            // In 'hell' mode prefer longer combos (reduce move count) and avoid wasting 2 unless necessary
+            const hellCombos = possibleCombos.filter(item => item.combo && item.combo.valid).sort((a, b) => {
+                if (b.indices.length !== a.indices.length) return b.indices.length - a.indices.length; // longer first
+                // prefer combos that don't include 2
+                const aHas2 = a.combo.cards.some(c => c.strength === 15);
+                const bHas2 = b.combo.cards.some(c => c.strength === 15);
+                if (aHas2 !== bHas2) return aHas2 ? 1 : -1;
+                return a.combo.strength - b.combo.strength;
+            });
+
+            if (hellCombos.length > 0) candidateCombos = hellCombos;
         }
         
         // 우선순위와 카드 강도를 고려하여 최적의 조합 선택
@@ -1767,7 +1883,8 @@
             if (a.priority !== b.priority) return b.priority - a.priority;
 
             const mediumPenalty = (item) => {
-                if (gameDifficulty !== 'medium') return 0;
+                // apply penalty when 'hard' difficulty (conservative)
+                if (gameDifficulty !== 'hard') return 0;
                 let penalty = 0;
                 if (item.combo.type === 'single' && item.combo.strength >= 13) penalty += 8;
                 if ((item.combo.type === 'pair' || item.combo.type === 'triple') && item.combo.strength >= 13) penalty += 12;
@@ -1926,14 +2043,13 @@
                 const isMobile = window.matchMedia && window.matchMedia('(max-width: 520px)').matches;
 
                 if (isMobile) {
-                    // If the combo is a straight, show range (e.g., 3~5)
                     const combo = analyzeCombo(historyItem.cards);
+                    // If the combo is a straight, show range (e.g., 3~5) and no badge
                     if (combo.valid && combo.type === 'straight') {
                         const sorted = [...historyItem.cards].sort((a, b) => a.strength - b.strength);
                         const rangeText = `${sorted[0].value}~${sorted[sorted.length - 1].value}`;
                         const rep = sorted[Math.floor(sorted.length/2)];
                         const colorClass = (rep.suit === '♦' || rep.suit === '♥') ? 'red' : 'black';
-                        const totalCount = historyItem.cards.length || 0;
                         histEl.innerHTML = `
                             <div class="history-mini-cards">
                                 <div class="history-mini-card ${colorClass} straight">
@@ -1941,7 +2057,6 @@
                                     <div class="card-suit">${rep.suit}</div>
                                     <div class="straight-range">${rangeText}</div>
                                 </div>
-                                <div class="history-badge">${totalCount > 1 ? 'x'+totalCount : ''}</div>
                             </div>`;
                     } else {
                         // Group by value + color
@@ -1953,8 +2068,14 @@
                             groups[key].count++;
                         });
 
-                        // keep all original cards in DOM but show a single visible card; badge shows total count
+                        // badge only for multi-card combos like pair/triple/quadruple/doubleStraight
                         const totalCount = historyItem.cards.length || 0;
+                        const badgeNeeded = (function() {
+                            const t = analyzeCombo(historyItem.cards);
+                            if (!t.valid) return false;
+                            return ['pair','triple','quadruple','doubleStraight'].includes(t.type) && totalCount > 1;
+                        })();
+
                         const parts = Object.keys(groups).map(k => {
                             const g = groups[k];
                             return `
@@ -1963,19 +2084,41 @@
                                     <div class="card-suit">${g.card.suit}</div>
                                 </div>`;
                         }).join('');
-                        histEl.innerHTML = `<div class="history-mini-cards">${parts}<div class="history-badge">${totalCount > 1 ? 'x'+totalCount : ''}</div></div>`;
+                        histEl.innerHTML = `<div class="history-mini-cards">${parts}${badgeNeeded ? `<div class="history-badge">x${totalCount}</div>` : ''}</div>`;
                     }
                 } else {
-                    const html = historyItem.cards.map(c => {
-                        const colorClass = (c.suit === '♦' || c.suit === '♥') ? 'red' : 'black';
-                        return `
-                            <div class="history-mini-card ${colorClass}">
-                                <div class="card-value">${c.value}</div>
-                                <div class="card-suit">${c.suit}</div>
+                    const combo = analyzeCombo(historyItem.cards);
+                    // If straight, show condensed range and no badge
+                    if (combo.valid && combo.type === 'straight') {
+                        const sorted = [...historyItem.cards].sort((a, b) => a.strength - b.strength);
+                        const rangeText = `${sorted[0].value}~${sorted[sorted.length - 1].value}`;
+                        const rep = sorted[Math.floor(sorted.length/2)];
+                        const colorClass = (rep.suit === '♦' || rep.suit === '♥') ? 'red' : 'black';
+                        histEl.innerHTML = `
+                            <div class="history-mini-cards">
+                                <div class="history-mini-card ${colorClass} straight">
+                                    <div class="card-value">${rep.value}</div>
+                                    <div class="card-suit">${rep.suit}</div>
+                                    <div class="straight-range">${rangeText}</div>
+                                </div>
                             </div>`;
-                    }).join('');
-                    const totalCount = historyItem.cards.length || 0;
-                    histEl.innerHTML = `<div class="history-mini-cards">${html}<div class="history-badge">${totalCount > 1 ? 'x'+totalCount : ''}</div></div>`;
+                    } else {
+                        const html = historyItem.cards.map(c => {
+                            const colorClass = (c.suit === '♦' || c.suit === '♥') ? 'red' : 'black';
+                            return `
+                                <div class="history-mini-card ${colorClass}">
+                                    <div class="card-value">${c.value}</div>
+                                    <div class="card-suit">${c.suit}</div>
+                                </div>`;
+                        }).join('');
+                        const totalCount = historyItem.cards.length || 0;
+                        const badgeNeeded = (function() {
+                            const t = analyzeCombo(historyItem.cards);
+                            if (!t.valid) return false;
+                            return ['pair','triple','quadruple','doubleStraight'].includes(t.type) && totalCount > 1;
+                        })();
+                        histEl.innerHTML = `<div class="history-mini-cards">${html}${badgeNeeded ? `<div class="history-badge">x${totalCount}</div>` : ''}</div>`;
+                    }
                 }
             }
         }
@@ -2084,6 +2227,11 @@
         document.getElementById('p3Cards').textContent = gameState.players[2].length;
         // player4 represents the human ('나') in the opponents area
         document.getElementById('p4Cards').textContent = gameState.players[3].length;
+        // Disable Re button when player's hand is empty (no cards to restart from)
+        try {
+            const reBtn = document.getElementById('bneu');
+            if (reBtn) reBtn.disabled = gameState.players[3].length === 0;
+        } catch (e) {}
     }
 
     // Update game info
@@ -2172,7 +2320,13 @@
     }
 
     // Start new game
-    function newGame() {
+    function newGame(confirm = false) {
+        // If not confirmed, show confirmation dialog first
+        if (!confirm) {
+            showRestartConfirm();
+            return;
+        }
+
         if (gameStarting) return; // already starting
         gameStarting = true;
 
@@ -2214,6 +2368,16 @@
             showOpponentBacks: false
         };
         
+        // Clear player's hand UI immediately when confirmed restart
+        try {
+            const hand = document.getElementById('playerHand');
+            if (hand) hand.innerHTML = '';
+            const lastPlayEl = document.getElementById('lastPlay');
+            if (lastPlayEl) lastPlayEl.innerHTML = '<p style="color: #999;">아직 카드가 나오지 않았습니다</p>';
+            const lastPlayerEl = document.getElementById('lastPlayer');
+            if (lastPlayerEl) lastPlayerEl.textContent = 'by: -';
+        } catch (e) { console.debug('clear UI failed', e); }
+
         // 바로 게임 시작
         startGameCountdown();
     }
@@ -2470,7 +2634,7 @@
         }
         
         // 새 게임 버튼도 터치 지원
-        const newGameBtns = document.querySelectorAll('button[onclick="newGame()"]');
+        const newGameBtns = document.querySelectorAll('button[onclick="newGame()"], button[data-action="new-game"]');
         newGameBtns.forEach(btn => {
             btn.addEventListener('touchstart', function(e) {
                 e.preventDefault();
@@ -2483,6 +2647,38 @@
                 newGame();
             }, { passive: false });
         });
+    }
+
+    // Restart confirmation helpers (customizable message and callbacks)
+    function showRestartConfirm(message, onYesCallback, onNoCallback) {
+        const dlg = document.getElementById('restartConfirm');
+        if (!dlg) return;
+        const text = document.getElementById('restartConfirmText');
+        if (text && typeof message === 'string') text.textContent = message;
+
+        dlg.style.display = 'flex';
+        const yes = document.getElementById('restartYes');
+        const no = document.getElementById('restartNo');
+
+        const onYes = () => { hideRestartConfirm(); if (typeof onYesCallback === 'function') onYesCallback(); else newGame(true); };
+        const onNo = () => { hideRestartConfirm(); if (typeof onNoCallback === 'function') onNoCallback(); };
+
+        // remove previous listeners by cloning node (safer across multiple opens)
+        const yesClone = yes.cloneNode(true);
+        yes.parentNode.replaceChild(yesClone, yes);
+        const noClone = no.cloneNode(true);
+        no.parentNode.replaceChild(noClone, no);
+
+        document.getElementById('restartYes').addEventListener('click', onYes, { once: true });
+        document.getElementById('restartNo').addEventListener('click', onNo, { once: true });
+    }
+    function hideRestartConfirm() {
+        const dlg = document.getElementById('restartConfirm');
+        if (!dlg) return;
+        dlg.style.display = 'none';
+        // restore default text
+        const text = document.getElementById('restartConfirmText');
+        if (text) text.textContent = '게임을 새로시작합니다. 클릭 후 게임을 재시작하겠습니까?';
     }
 </script>
 
