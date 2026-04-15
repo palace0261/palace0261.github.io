@@ -359,7 +359,7 @@
       <div class="last-play" id="lastPlay">
         <p style="color: #999;">카드가 나오지 않았습니다</p>
       </div>
-      <p id="lastPlayer" style="display: none;">by: -</p>
+      <p id="lastPlayer">by: -</p>
  
 
             </div>
@@ -1424,7 +1424,8 @@
         for (let i = 0; i < 4; i++) {
             next = (next + 1) % 4;
             // Strict: only players still marked inRound participate (explicit passes are excluded)
-            if (gameState.playerActive[next] && gameState.inRound[next]) {
+            // Also ensure explicitly-passed players are skipped (defensive against stale state)
+            if (gameState.playerActive[next] && gameState.inRound[next] && !gameState.explicitPass[next]) {
                 gameState.currentPlayer = next;
                 foundNext = true;
                 break;
@@ -1492,8 +1493,19 @@
         if (winnerIndex >= 0 && gameState.playerActive[winnerIndex]) {
             gameState.currentPlayer = winnerIndex;
         } else {
-            const firstActive = gameState.playerActive.findIndex(v => v);
-            if (firstActive >= 0) gameState.currentPlayer = firstActive;
+            // Prefer the next active player after the current one to preserve natural turn order
+            let chosenStarter = -1;
+            for (let i = 1; i <= 4; i++) {
+                const cand = (gameState.currentPlayer + i) % 4;
+                if (gameState.playerActive[cand]) { chosenStarter = cand; break; }
+            }
+            if (chosenStarter >= 0) {
+                gameState.currentPlayer = chosenStarter;
+            } else {
+                // Fallback to first active player if nothing found
+                const firstActive = gameState.playerActive.findIndex(v => v);
+                if (firstActive >= 0) gameState.currentPlayer = firstActive;
+            }
         }
 
         // reset lastPlayer (no current lead yet)
