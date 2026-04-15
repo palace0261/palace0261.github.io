@@ -1013,6 +1013,15 @@
         return card.suit === '♦' || card.suit === '♥';
     }
 
+    // Returns true if a Heart '2' has been played earlier in the game
+    function hasHeartTwoPlayed() {
+        if (!gameState.playHistory || !Array.isArray(gameState.playHistory)) return false;
+        return gameState.playHistory.some(h => {
+            if (!h || !h.cards || h.cards === 'PASS') return false;
+            return h.cards.some(c => c && c.value === '2' && c.suit === '♥');
+        });
+    }
+
     // Analyze card combination
     function analyzeCombo(cards) {
         if (cards.length === 0) return { valid: false };
@@ -1425,10 +1434,22 @@
         }
 
         // Give a short delay for pass indicator / UX before advancing turn
+        // Capture the current player at time of scheduling so we can avoid
+        // executing a stale timeout after another play has already advanced the turn.
         const delay = isAiCall ? 700 : 0;
+        const scheduledFrom = gameState.currentPlayer;
         setTimeout(() => {
-            nextTurn();
-            updateGameInfo();
+            // Only advance if the turn still belongs to the same player who scheduled this pass.
+            // If another player has already played (or currentPlayer changed), skip to avoid
+            // duplicate nextTurn() calls that can produce double-turn bugs.
+            try {
+                if (gameState.currentPlayer === scheduledFrom) {
+                    nextTurn();
+                    updateGameInfo();
+                } else {
+                    console.debug('pasturn timeout skipped (stale)', { scheduledFrom, currentPlayer: gameState.currentPlayer });
+                }
+            } catch (e) { console.debug('pasturn timeout error', e); }
         }, delay);
     }
 
@@ -1729,12 +1750,28 @@
                     return a.reduce((s, i) => s + hand[i].strength, 0) - b.reduce((s, i) => s + hand[i].strength, 0);
                 });
                 // if top uses 2 and an alternative exists without 2, pick the alternative
-                const top = uniq[0];
-                if (containsHighCard(top) && top.some(i => hand[i].strength === 15)) {
-                    const alt = uniq.find(c => !c.some(i => hand[i].strength === 15));
-                    if (alt) return alt;
-                }
-                return top;
+                    const top = uniq[0];
+                    if (containsHighCard(top) && top.some(i => hand[i].strength === 15)) {
+                        const alt = uniq.find(c => !c.some(i => hand[i].strength === 15));
+                        if (alt) return alt;
+                    }
+
+                    // In 'hell' difficulty: never play a non-Heart '2' while Heart '2' hasn't been played.
+                    // If the chosen combo contains any 2 that is NOT Heart and Heart2 hasn't been played,
+                    // prefer an alternative without any 2; if no alternative exists, pass (return []).
+                    try {
+                        if (gameDifficulty === 'hell' && !hasHeartTwoPlayed()) {
+                            const chosenHasNonHeartTwo = top && top.some(i => hand[i] && hand[i].value === '2' && hand[i].suit !== '♥');
+                            if (chosenHasNonHeartTwo) {
+                                const altNoTwo = uniq.find(c => !c.some(i => hand[i] && hand[i].value === '2'));
+                                if (altNoTwo) return altNoTwo;
+                                // If no non-2 alternative, explicitly pass to avoid wasting a lower-2
+                                return [];
+                            }
+                        }
+                    } catch (e) { console.debug('chooseComboFromCandidates hell-check error', e); }
+
+                    return top;
             }
 
             // EASY/default: pick lowest-strength candidate (greedy)
@@ -1775,9 +1812,14 @@
                     });
 
                     // check whether any other active player currently holds a higher '2'
+                    // Only consider opponents who are still participating in the current round
+                    // (haven't explicitly passed) because a passer cannot immediately beat the card.
                     const higherHeld = gameState.players.some((phand, p) => {
                         if (p === gameState.currentPlayer) return false;
                         if (!gameState.playerActive[p]) return false;
+                        // if opponent already left the current round, they can't immediately counter
+                        if (gameState.explicitPass && gameState.explicitPass[p]) return false;
+                        if (gameState.inRound && !gameState.inRound[p]) return false;
                         return phand.some(c => c && c.strength === 15 && c.suitStrength > chosenCard.suitStrength);
                     });
 
@@ -1966,6 +2008,20 @@
 
             if (conservativeCombos.length > 0) candidateCombos = conservativeCombos;
         }
+
+        // In 'hell' difficulty, avoid opening/play with non-Heart 2 cards until Heart 2 has been
+        // played elsewhere in the game. Prefer combos without any 2, or combos that include the Heart 2.
+        try {
+            if (gameDifficulty === 'hell' && !hasHeartTwoPlayed()) {
+                const filtered = candidateCombos.filter(item => !item.combo.cards.some(c => c && c.value === '2' && c.suit !== '♥'));
+                if (filtered.length > 0) candidateCombos = filtered;
+                else {
+                    // no combos without non-Heart 2; prefer combos that include Heart 2 specifically
+                    const heart2Only = candidateCombos.filter(item => item.combo.cards.some(c => c && c.value === '2' && c.suit === '♥'));
+                    if (heart2Only.length > 0) candidateCombos = heart2Only;
+                }
+            }
+        } catch (e) { console.debug('findBestStartingCombo hell-filter error', e); }
 
         if (gameDifficulty === 'hell') {
             // In 'hell' mode prefer longer combos (reduce move count) and avoid wasting 2 unless necessary
