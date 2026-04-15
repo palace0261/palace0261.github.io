@@ -431,6 +431,7 @@ body {
 }
 
 #lastPlayer {
+    display: none;
     /* grid-area: by; */
     justify-self: end;
     /* align-self: end; */
@@ -717,6 +718,49 @@ p#lastPlayer {}
     color: #090909 !important;
     border-color: rgba(255, 255, 255, 0.12);
     cursor: not-allowed;
+}
+
+/* UI tweaks requested: reduce hell center-area size, enlarge player-hand on my-turn, and bigger controls buttons */
+
+/* Slightly reduce the visual footprint of the hell center-area (less inset glow, less padding) */
+.center-area.difficulty-hell {
+    /* keep tint but reduce intensity */
+    background-color: rgba(90, 10, 10, 0.64) !important;
+    box-shadow: inset 0 0 60px rgba(60,10,10,0.6) !important;
+    padding: 10px !important;
+}
+.center-area.difficulty-hell .last-play {
+    min-height: 84px !important;
+    padding: 8px !important;
+}
+
+/* Make player-hand visually larger when it's the player's turn */
+.player-hand.my-turn {
+    padding: 1.25rem 1.5rem !important;
+    border-radius: calc(var(--radius-lg) + 6px) !important;
+}
+.player-hand.my-turn > h3 { font-size: 1.05rem !important; }
+.player-hand.my-turn .hand-cards { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.player-hand.my-turn .card { width: min(100%, 120px); }
+
+/* Make controls buttons a bit larger for desktop and touch devices */
+.controls .btn {
+    padding: 0.9rem 1.4rem;
+    min-height: 48px;
+    font-size: 1rem;
+    border-radius: 12px;
+}
+
+/* Slightly increase primary action prominence */
+.controls .btn.primary {
+    box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 640px) {
+    .player-hand.my-turn .card { width: min(100%, 92px); }
+    .controls .btn { padding: 0.85rem 1rem; font-size: 0.98rem; }
+    .center-area.difficulty-hell { padding: 8px !important; }
 }
 
 .pass-indicator {
