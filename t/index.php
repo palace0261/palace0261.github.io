@@ -874,9 +874,16 @@
       if (lastPlay.type === 'bomb') return false;
       if (lastPlay.type === 'single') {
         if (candidate.type !== 'single') return false;
-        // 2 (rankIndex 12) can beat any single regardless of suit/color
-        if (candidate.rank === 12) return true;
-        // Otherwise, must be same suit and same color and higher rank
+        // If candidate is a 2 and lastPlay is not a 2, candidate wins regardless of suit/color
+        if (candidate.rank === 12 && lastPlay.rank !== 12) return true;
+        // If both are 2, compare by suit order: club < spade < diamond < heart
+        if (candidate.rank === 12 && lastPlay.rank === 12) {
+          const suitOrderRank = { 0: 1, 1: 0, 2: 2, 3: 3 };
+          return suitOrderRank[candidate.suitIndex] > suitOrderRank[lastPlay.suitIndex];
+        }
+        // If lastPlay is 2 and candidate is not, candidate cannot beat
+        if (lastPlay.rank === 12 && candidate.rank !== 12) return false;
+        // Otherwise (neither is 2): must be same suit and same color and higher rank
         return candidate.suitIndex === lastPlay.suitIndex && candidate.color === lastPlay.color && candidate.rank > lastPlay.rank;
       }
 
