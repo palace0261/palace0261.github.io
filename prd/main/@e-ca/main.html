@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Bolin Range All Weather 4K60 PTZ Camera 전자카탈로그">
+  <meta name="keywords" content="Bolin, Range, PTZ Camera, 4K60, e-catalog, SODA MEDIA">
+  <meta name="author" content="SODA MEDIA">
+  <meta name="robots" content="index,follow">
+
+  <meta property="og:title" content="Bolin Range | 2026 e-Catalog">
+  <meta property="og:description" content="Range All Weather 4K60 PTZ Camera를 위한 표지, 제품 리스트, 제품 상세, 마무리 페이지 구성의 전자카탈로그입니다.">
+  <meta property="og:image" content="https://cdn-pro-web-250-117.cdn-nhncommerce.com/soda004105_godomall_com/data/img/sodaic.png">
+  <meta property="og:url" content="https://www.sodamedia.shop">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Bolin Range | 2026 e-Catalog">
+
+  <link rel="canonical" href="https://www.sodamedia.shop">
+  <link rel="icon" href="https://cdn-pro-web-250-117.cdn-nhncommerce.com/soda004105_godomall_com/data/img/sodaic.png" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <title>Bolin Range | 2026 e-Catalog</title>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #050910;
+      --bg-soft: #0c1320;
+      --panel: rgba(14, 22, 35, 0.82);
+      --panel-strong: rgba(18, 28, 45, 0.96);
+      --line: rgba(255, 255, 255, 0.1);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --text: #f4f7fb;
+      --muted: #a7b3c4;
+      --accent: #3ac7ff;
+      --accent-2: #ff9a3d;
+      --accent-3: #6dffcb;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(58, 199, 255, 0.18), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(255, 154, 61, 0.12), transparent 24%),
+        linear-gradient(180deg, #03060b 0%, #09111c 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.9), transparent 82%);
+      opacity: 0.65;
+      z-index: -1;
+    }
+
+    img {
+      display: block;
+      max-width: 100%;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px clamp(18px, 3vw, 32px);
+      background: rgba(4, 8, 14, 0.78);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: linear-gradient(145deg, var(--accent), #123d68 50%, var(--accent-2));
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 12px 30px rgba(58, 199, 255, 0.18);
+    }
+
+    .brand-copy strong {
+      display: block;
+      font-size: 0.98rem;
+      letter-spacing: 0.08em;
+    }
+
+    .brand-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 2px;
+    }
+
+    .topbar-note {
+      color: var(--muted);
+      font-size: 0.86rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .catalog {
+      scroll-snap-type: y proximity;
+    }
+
+    .page {
+      min-height: calc(100vh - 74px);
+      padding: clamp(22px, 3vw, 42px);
+      scroll-snap-align: start;
+      position: relative;
+      display: grid;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      overflow: hidden;
+    }
+
+    .page::after {
+      content: attr(data-page);
+      position: absolute;
+      top: 24px;
+      right: clamp(18px, 3vw, 32px);
+      color: rgba(255, 255, 255, 0.18);
+      font-size: 0.78rem;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+    }
+
+    .page-shell {
+      width: min(1280px, 100%);
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.08fr 0.92fr;
+      align-items: center;
+      gap: clamp(24px, 4vw, 64px);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(58, 199, 255, 0.08);
+      border: 1px solid rgba(58, 199, 255, 0.22);
+      color: #d8f5ff;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+    }
+
+    .hero-title {
+      margin: 18px 0 12px;
+      font-size: clamp(2.7rem, 6vw, 5.8rem);
+      line-height: 0.96;
+      letter-spacing: -0.05em;
+    }
+
+    .hero-title span {
+      display: block;
+      color: var(--accent);
+      font-size: 0.46em;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .hero-lead {
+      max-width: 44rem;
+      color: var(--muted);
+      font-size: clamp(1rem, 1.1vw, 1.18rem);
+      line-height: 1.85;
+      margin: 0;
+    }
+
+    .hero-badges,
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 26px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      color: var(--text);
+      font-size: 0.88rem;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .chip i {
+      color: var(--accent);
+    }
+
+    .hero-art {
+      position: relative;
+      min-height: 620px;
+      display: grid;
+      place-items: center;
+      isolation: isolate;
+    }
+
+    .hero-art::before,
+    .hero-art::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(16px);
+      z-index: -1;
+    }
+
+    .hero-art::before {
+      width: 260px;
+      height: 260px;
+      background: rgba(58, 199, 255, 0.2);
+      bottom: 16%;
+      left: 8%;
+    }
+
+    .hero-art::after {
+      width: 220px;
+      height: 220px;
+      background: rgba(255, 154, 61, 0.16);
+      top: 12%;
+      right: 8%;
+    }
+
+    .hero-image-wrap {
+      width: min(100%, 720px);
+      padding: 28px;
+      border-radius: 34px;
+      background: linear-gradient(180deg, rgba(10, 18, 31, 0.76), rgba(6, 11, 19, 0.92));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-image-wrap img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 20px 50px rgba(0, 0, 0, 0.5));
+    }
+
+    .page-block {
+      display: grid;
+      gap: 26px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: clamp(1.8rem, 3vw, 3.2rem);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 42rem;
+      line-height: 1.75;
+      font-size: 0.98rem;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(16px);
+    }
+
+    .product-list-grid {
+      display: grid;
+      grid-template-columns: 1.18fr 0.82fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .feature-card,
+    .summary-card,
+    .spec-card,
+    .closing-card {
+      position: relative;
+      overflow: hidden;
+      padding: 24px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(17, 27, 42, 0.96), rgba(10, 15, 24, 0.94));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .feature-card::after,
+    .summary-card::after,
+    .spec-card::after,
+    .closing-card::after {
+      content: '';
+      position: absolute;
+      inset: auto -20% -36% auto;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(58, 199, 255, 0.15), transparent 68%);
+      pointer-events: none;
+    }
+
+    .lead-product {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 18px;
+      align-items: center;
+      min-height: 100%;
+    }
+
+    .lead-image {
+      padding: 20px;
+      border-radius: 22px;
+      background: radial-gradient(circle at 30% 30%, rgba(58, 199, 255, 0.13), transparent 38%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      min-height: 360px;
+      display: grid;
+      place-items: center;
+    }
+
+    .lead-image img {
+      width: 100%;
+      object-fit: contain;
+      max-height: 360px;
+    }
+
+    .lead-title {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 2.8vw, 3rem);
+      line-height: 1.06;
+      letter-spacing: -0.04em;
+    }
+
+    .lead-copy {
+      color: var(--muted);
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    .quick-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.12rem;
+      margin-bottom: 4px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.92rem;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-content: start;
+    }
+
+    .summary-card h3,
+    .spec-card h3,
+    .closing-card h3 {
+      margin: 0 0 10px;
+      font-size: 1.2rem;
+      letter-spacing: -0.03em;
+    }
+
+    .summary-card p,
+    .spec-card p,
+    .closing-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 0.95rem;
+    }
+
+    .photo-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .photo-card {
+      overflow: hidden;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(20, 29, 45, 0.96), rgba(10, 16, 27, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .photo-card figure {
+      margin: 0;
+      height: 100%;
+      display: grid;
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      min-height: 320px;
+    }
+
+    .photo-caption {
+      padding: 18px 20px 22px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .feature-matrix {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .mini-feature {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .mini-feature .kicker {
+      color: var(--accent);
+      font-size: 0.76rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    .mini-feature h3 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .mini-feature p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 0.92rem;
+    }
+
+    .feature-slab {
+      margin-top: 18px;
+      padding: 20px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(58, 199, 255, 0.11), rgba(255, 154, 61, 0.07));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .feature-slab ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    .feature-slab li {
+      margin-bottom: 6px;
+      color: var(--muted);
+    }
+
+    .port-grid {
+      display: grid;
+      grid-template-columns: 1.04fr 0.96fr;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .port-panel {
+      padding: 24px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(13, 20, 31, 0.98), rgba(8, 12, 20, 0.95));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .port-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .port-item {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .port-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1rem;
+    }
+
+    .port-item span {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .spec-layout {
+      display: grid;
+      grid-template-columns: 0.92fr 1.08fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .spec-hero {
+      padding: 26px;
+      border-radius: 26px;
+      background: linear-gradient(180deg, rgba(12, 20, 30, 0.98), rgba(7, 10, 17, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+    }
+
+    .spec-hero img {
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      object-fit: cover;
+      margin-top: 18px;
+    }
+
+    .spec-rows {
+      display: grid;
+      gap: 12px;
+    }
+
+    .spec-row {
+      display: grid;
+      grid-template-columns: 0.42fr 0.58fr;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .spec-row strong {
+      color: #e8eff8;
+      font-size: 0.92rem;
+    }
+
+    .spec-row span {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    .closing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .closing-banner {
+      position: relative;
+      overflow: hidden;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(58, 199, 255, 0.2), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(255, 154, 61, 0.16), transparent 22%),
+        linear-gradient(180deg, rgba(17, 24, 38, 0.98), rgba(8, 12, 19, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+      padding: 30px;
+      min-height: 360px;
+      display: grid;
+      align-items: end;
+    }
+
+    .closing-banner h2 {
+      margin: 0 0 10px;
+      font-size: clamp(2.2rem, 4vw, 4rem);
+      line-height: 1.03;
+      letter-spacing: -0.05em;
+    }
+
+    .closing-banner p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+      max-width: 40rem;
+    }
+
+    .closing-banner .brand-block {
+      margin-top: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .contact-block {
+      padding: 26px;
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(13, 20, 31, 0.98), rgba(8, 12, 20, 0.96));
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 16px;
+      align-content: start;
+    }
+
+    .contact-item {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .contact-item strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.96rem;
+    }
+
+    .contact-item span {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .wide-note {
+      margin-top: 16px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: rgba(58, 199, 255, 0.08);
+      border: 1px solid rgba(58, 199, 255, 0.2);
+      color: #d6f6ff;
+      line-height: 1.7;
+      font-size: 0.94rem;
+    }
+
+    .footer-space {
+      height: 28px;
+    }
+
+    @media (max-width: 1100px) {
+      .hero-grid,
+      .product-list-grid,
+      .port-grid,
+      .spec-layout,
+      .closing-grid,
+      .lead-product {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-art {
+        min-height: 440px;
+      }
+
+      .section-head {
+        align-items: start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .topbar {
+        padding-inline: 16px;
+      }
+
+      .topbar-note {
+        display: none;
+      }
+
+      .page {
+        min-height: auto;
+        padding: 18px 16px 28px;
+      }
+
+      .page::after {
+        top: 18px;
+        right: 16px;
+      }
+
+      .hero-title {
+        font-size: clamp(2.2rem, 11vw, 4rem);
+      }
+
+      .quick-metrics,
+      .summary-grid,
+      .feature-matrix,
+      .port-list,
+      .spec-row {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-image-wrap {
+        padding: 18px;
+      }
+
+      .photo-card img {
+        min-height: 240px;
+      }
+
+      .closing-banner,
+      .contact-block,
+      .port-panel,
+      .spec-hero {
+        padding: 20px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+        color: #000;
+      }
+
+      body::before,
+      .topbar {
+        display: none !important;
+      }
+
+      .page {
+        min-height: 100vh;
+        page-break-after: always;
+        border-bottom: 0;
+      }
+
+      .panel,
+      .feature-card,
+      .summary-card,
+      .spec-card,
+      .closing-card,
+      .photo-card,
+      .port-panel,
+      .spec-hero,
+      .closing-banner,
+      .contact-block {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-copy">
+        <strong>Bolin Range e-Catalog</strong>
+        <span>SODA MEDIA · 2026</span>
+      </div>
+    </div>
+    <div class="topbar-note">All Weather 4K60 PTZ Camera</div>
+  </header>
+
+  <main class="catalog">
+    <section class="page" data-page="page 01 cover">
+      <div class="page-shell hero-grid">
+        <div>
+          <div class="eyebrow"><i class="fa-solid fa-book-open"></i> electronic catalog</div>
+          <h1 class="hero-title">
+            <span>Range</span>
+            All Weather 4K60 PTZ Camera
+          </h1>
+          <p class="hero-lead">
+            실내와 실외를 가리지 않는 Range는 이동성, 내구성, 빠른 PTZ 응답성을 한 페이지 안에 정리한 카탈로그입니다.
+            표지부터 제품 리스트, 핵심 기능, 설치 환경, 스펙, 마무리 페이지까지 한 번에 살펴볼 수 있도록 구성했습니다.
+          </p>
+
+          <div class="hero-badges">
+            <span class="chip"><i class="fa-solid fa-video"></i> 4K60</span>
+            <span class="chip"><i class="fa-solid fa-magnifying-glass"></i> 25X Optical Zoom</span>
+            <span class="chip"><i class="fa-solid fa-shield-halved"></i> IP65</span>
+            <span class="chip"><i class="fa-solid fa-temperature-high"></i> -40°C to +60°C</span>
+          </div>
+        </div>
+
+        <div class="hero-art">
+          <div class="hero-image-wrap">
+            <img src="../../img/range/800range.png" alt="Bolin Range PTZ camera hero image">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="page 02 product list">
+      <div class="page-shell page-block">
+        <div class="section-head">
+          <div>
+            <h2>제품 리스트</h2>
+            <p>이 카탈로그는 Range 한 종을 중심으로 핵심 기능과 적용 가치를 리스트처럼 빠르게 읽을 수 있도록 정리했습니다.</p>
+          </div>
+        </div>
+
+        <div class="product-list-grid">
+          <article class="feature-card lead-product panel">
+            <div class="lead-image">
+              <img src="../../img/range/range.png" alt="Bolin Range front view">
+            </div>
+            <div>
+              <h3 class="lead-title">Bolin Range</h3>
+              <p class="lead-copy">
+                이동형 제작, 야외 이벤트, 스튜디오, 경기장, 예배 공간까지 확장 가능한 올웨더 PTZ 카메라.
+                강한 기동성에 4K60 화질과 다양한 출력 방식을 더해 현장 운용의 범위를 넓혀 줍니다.
+              </p>
+              <div class="quick-metrics">
+                <div class="metric">
+                  <strong>4K60 Professional Video</strong>
+                  <span>빠르게 움직이는 피사체도 부드럽게 잡는 고해상도 영상.</span>
+                </div>
+                <div class="metric">
+                  <strong>PTZR 4-Axis Movement</strong>
+                  <span>Pan, Tilt, Zoom, Roll을 모두 활용하는 유연한 구도.</span>
+                </div>
+                <div class="metric">
+                  <strong>From Studio to Stadium</strong>
+                  <span>설치형부터 현장형까지 폭넓은 운용 시나리오 대응.</span>
+                </div>
+                <div class="metric">
+                  <strong>One Camera Does It All</strong>
+                  <span>IP, baseband, wireless, recording을 하나의 플랫폼에 통합.</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <div class="summary-grid">
+            <article class="summary-card">
+              <h3>Image and Optics</h3>
+              <p>1/1.8” STARVIS 2 CMOS 센서, 25X 줌, 0.5Lux 저조도 대응으로 선명한 화면을 유지합니다.</p>
+            </article>
+            <article class="summary-card">
+              <h3>Connectivity</h3>
+              <p>12G-SDI, HDMI 2.0, USB-C, IP Video Streaming, Time Code, RS-422 등 다양한 입출력을 제공합니다.</p>
+            </article>
+            <article class="summary-card">
+              <h3>Movement</h3>
+              <p>최대 300°/s 회전 속도와 270° 롤 축으로 빠른 리프레임과 창의적 앵글을 지원합니다.</p>
+            </article>
+            <article class="summary-card">
+              <h3>Environment</h3>
+              <p>IP65 등급과 -40°C to +60°C 운용 범위를 바탕으로 실내외 현장에서 안정적으로 동작합니다.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="feature-slab">
+          <ul>
+            <li>Auditoriums, arenas, concerts, education, sports, studios, remote production 등 다양한 적용 분야</li>
+            <li>배낭형 이동 카탈로그가 아니라 현장 배치에 최적화된 프로덕션 카메라 중심 구성</li>
+            <li>카탈로그 전체를 검은 배경과 청색 하이라이트로 통일해 제품의 산업적 이미지를 강조</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="page 03 image and optics">
+      <div class="page-shell page-block">
+        <div class="section-head">
+          <div>
+            <h2>Image Comes First. Speed Follows</h2>
+            <p>제품의 인상과 화질 경쟁력을 먼저 보여주고, 그 다음에 숫자와 스펙으로 신뢰를 쌓는 구성입니다.</p>
+          </div>
+        </div>
+
+        <div class="photo-split">
+          <article class="photo-card">
+            <figure>
+              <img src="../../img/range/001.png" alt="Front view of Bolin Range">
+              <figcaption class="photo-caption">정면 컷은 카탈로그의 첫 제품 페이지에 적합한 대표 비주얼입니다.</figcaption>
+            </figure>
+          </article>
+          <article class="photo-card">
+            <figure>
+              <img src="../../img/range/002.png" alt="Side view of Bolin Range">
+              <figcaption class="photo-caption">사이드 뷰는 본체 비례와 실장 감각을 전달하는 데 효과적입니다.</figcaption>
+            </figure>
+          </article>
+        </div>
+
+        <div class="feature-matrix">
+          <article class="mini-feature">
+            <span class="kicker">sensor</span>
+            <h3>1/1.8” Sony STARVIS 2 CMOS</h3>
+            <p>디테일과 색 재현을 안정적으로 확보해 현장 조명 변화에도 대응합니다.</p>
+          </article>
+          <article class="mini-feature">
+            <span class="kicker">video</span>
+            <h3>True 4K60 Professional Video</h3>
+            <p>빠른 움직임을 자연스럽게 담아 라이브 프로덕션에 적합한 결과를 제공합니다.</p>
+          </article>
+          <article class="mini-feature">
+            <span class="kicker">lens</span>
+            <h3>25X Optical Zoom</h3>
+            <p>넓은 와이드 샷부터 타이트한 클로즈업까지 한 대로 유연하게 커버합니다.</p>
+          </article>
+          <article class="mini-feature">
+            <span class="kicker">isp</span>
+            <h3>Advanced ISP & Low Light</h3>
+            <p>화이트밸런스와 노출을 균형 있게 맞춰 어두운 환경에서도 영상 품질을 유지합니다.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="page 04 connectivity">
+      <div class="page-shell page-block">
+        <div class="section-head">
+          <div>
+            <h2>From Studio to Stadium - One Camera Does It All</h2>
+            <p>출력과 제어를 한 장에 모아 제품의 통합력을 보여주는 페이지입니다. 설치 현장에서는 이 부분이 구매 판단에 가장 크게 작용합니다.</p>
+          </div>
+        </div>
+
+        <div class="port-grid">
+          <article class="port-panel">
+            <div class="eyebrow"><i class="fa-solid fa-wave-square"></i> connectivity and outputs</div>
+            <h3 class="lead-title" style="margin-top:16px; font-size: clamp(1.9rem, 3vw, 3.1rem);">Flexible I/O for modern workflows</h3>
+            <p class="lead-copy">
+              현장에서는 출력 방식의 다양성이 곧 장비의 생존력입니다. Range는 SDI, HDMI, USB, IP를 함께 제공해
+              방송, AV, 스트리밍, 원격 제작 시나리오를 폭넓게 수용합니다.
+            </p>
+
+            <div class="port-list">
+              <div class="port-item"><strong>12G-SDI</strong><span>고대역 베이스밴드 운용을 위한 핵심 출력.</span></div>
+              <div class="port-item"><strong>HDMI 2.0</strong><span>현장 모니터링과 직접 연결에 적합.</span></div>
+              <div class="port-item"><strong>USB-C (UVC)</strong><span>컴퓨터 기반 스트리밍 환경과 잘 맞는 연결 방식.</span></div>
+              <div class="port-item"><strong>IP Video Streaming</strong><span>NDI, SRT, RTSP, RTMP 등 네트워크 워크플로우 대응.</span></div>
+              <div class="port-item"><strong>Time Code</strong><span>멀티카메라 제작에서 타이밍 동기화를 지원.</span></div>
+              <div class="port-item"><strong>Balanced Audio</strong><span>Mini XLR 입력과 오디오 통합 운용 가능.</span></div>
+            </div>
+          </article>
+
+          <article class="port-panel">
+            <div class="feature-card" style="height:100%; padding:24px; background: linear-gradient(180deg, rgba(10, 17, 28, 0.8), rgba(7, 10, 16, 0.96));">
+              <h3 style="margin-top:0; font-size:1.2rem;">System Highlights</h3>
+              <div class="chip-row">
+                <span class="chip"><i class="fa-solid fa-signal"></i> NDI Embedded Bridge</span>
+                <span class="chip"><i class="fa-solid fa-tachometer-alt"></i> Ultra Low Latency</span>
+                <span class="chip"><i class="fa-solid fa-code"></i> API Integration</span>
+                <span class="chip"><i class="fa-solid fa-wifi"></i> Wi-Fi Connectivity</span>
+                <span class="chip"><i class="fa-solid fa-sliders"></i> Color Matrix</span>
+                <span class="chip"><i class="fa-solid fa-compact-disc"></i> Onboard Recording</span>
+              </div>
+
+              <div class="wide-note">
+                하나의 카메라에 제어, 기록, 스트리밍, 인터페이스를 모두 담아 장비 수를 줄이고 설치 복잡도를 낮춥니다.
+              </div>
+
+              <div class="quick-metrics" style="margin-top:20px;">
+                <div class="metric">
+                  <strong>One Cable Solution</strong>
+                  <span>1Gb Ethernet 및 PoE++ 지원으로 단일 케이블 배선에 유리합니다.</span>
+                </div>
+                <div class="metric">
+                  <strong>Power External Devices</strong>
+                  <span>최대 12V 2A 전원 출력으로 외부 장치 연결을 돕습니다.</span>
+                </div>
+                <div class="metric">
+                  <strong>Realtime Monitoring</strong>
+                  <span>카메라 상태와 비디오를 함께 확인하는 운영 흐름에 맞습니다.</span>
+                </div>
+                <div class="metric">
+                  <strong>Broadcast Ready</strong>
+                  <span>전통적인 방송 시스템과 IP 기반 시스템 사이의 연결 고리 역할을 합니다.</span>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="page 05 movement">
+      <div class="page-shell page-block">
+        <div class="section-head">
+          <div>
+            <h2>PTZ - Movement and Intelligence</h2>
+            <p>Range의 움직임 페이지는 숫자만 보여주는 구성이 아니라, 왜 이 움직임이 현장에 유리한지까지 함께 설명합니다.</p>
+          </div>
+        </div>
+
+        <div class="photo-split">
+          <article class="photo-card">
+            <figure>
+              <img src="../../img/range/800range.png" alt="Range with side and screen view">
+              <figcaption class="photo-caption">다각도 실루엣은 PTZ 구조와 휴대성, I/O 패널 배치를 한 번에 보여줍니다.</figcaption>
+            </figure>
+          </article>
+          <article class="feature-card panel">
+            <div class="eyebrow"><i class="fa-solid fa-bolt"></i> motion intelligence</div>
+            <h3 class="lead-title" style="margin-top:16px; font-size: clamp(1.9rem, 3vw, 3rem);">No Limits. No Missed Moments.</h3>
+            <p class="lead-copy">
+              빠른 재구도, 270° 롤 축, 3축 안정화, 255단계 제어는 현장에서 원하는 장면을 놓치지 않기 위한 구성입니다.
+            </p>
+
+            <div class="feature-matrix" style="margin-top:18px;">
+              <article class="mini-feature">
+                <span class="kicker">speed</span>
+                <h3>Up to 300°/s</h3>
+                <p>빠른 이동과 프리셋 전환으로 리듬감 있는 현장 운영이 가능합니다.</p>
+              </article>
+              <article class="mini-feature">
+                <span class="kicker">precision</span>
+                <h3>255 Control Steps</h3>
+                <p>일반적인 단계 수보다 더 촘촘한 제어로 미세한 프레이밍이 가능합니다.</p>
+              </article>
+              <article class="mini-feature">
+                <span class="kicker">stability</span>
+                <h3>3-Axis Image Stabilization</h3>
+                <p>진동과 이동이 많은 현장에서도 흔들림을 줄여 안정적인 샷을 유지합니다.</p>
+              </article>
+              <article class="mini-feature">
+                <span class="kicker">smart</span>
+                <h3>Trace Memory & AI Ready</h3>
+                <p>반복 동선과 향후 AI 프레이밍, AI 트래킹 확장에 대응합니다.</p>
+              </article>
+            </div>
+
+            <div class="wide-note">
+              0.05°/s부터 70°/s까지의 폭넓은 제어 범위는 느린 연출과 빠른 추적을 모두 소화하도록 설계되어 있습니다.
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="page 06 environment">
+      <div class="page-shell page-block">
+        <div class="section-head">
+          <div>
+            <h2>From Indoors to Outdoors - Without a Second Thought</h2>
+            <p>환경 페이지는 제품이 어디에서, 어떻게 동작하는지에 대한 설득력을 만드는 구간입니다. Range는 이 페이지에서 가장 강한 인상을 남깁니다.</p>
+          </div>
+        </div>
+
+        <div class="spec-layout">
+          <article class="spec-hero">
+            <div class="eyebrow"><i class="fa-solid fa-tree"></i> environmental capability</div>
+            <h3 class="lead-title" style="margin-top:16px; font-size: clamp(1.9rem, 3vw, 3rem);">Built for weather, movement, and deployment</h3>
+            <p class="lead-copy">
+              실내 고정 설치부터 실외 임시 세팅까지 넓게 대응합니다. 이동성과 방수, 온도 대응, 액세서리 확장성은 Range를 단순한 카메라가 아니라 현장 장비로 보이게 합니다.
+            </p>
+
+            <img src="../../img/range/range.png" alt="Bolin Range camera">
+          </article>
+
+          <div class="spec-rows">
+            <div class="spec-row">
+              <strong>Indoor Outdoor Use</strong>
+              <span>실내외 모두에 대응하는 설계로 배치 유연성이 높습니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>IP65 Weather Protection</strong>
+              <span>먼지와 물로부터 장비를 보호해 야외 운용 안정성을 높입니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>Operation in Extreme Climates</strong>
+              <span>-40°C to +60°C 운용 범위로 혹한과 고온 환경을 함께 고려합니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>Integrated Carry Handle</strong>
+              <span>설치와 이동, 재배치가 잦은 현장에서 체감 편의성을 높입니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>Accessory Mounting Points</strong>
+              <span>마이크, 모니터, 무선 송신기 등을 장비에 직접 확장할 수 있습니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>Covered in all Environments</strong>
+              <span>I/O 패널 커버로 연결부를 보호하면서도 케이블 연결 상태를 유지합니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>Range Works with Bolin Mounting System</strong>
+              <span>실내용과 실외용 마운팅 솔루션과 함께 운용할 수 있습니다.</span>
+            </div>
+            <div class="spec-row">
+              <strong>NDAA Compliant</strong>
+              <span>보안 요구가 있는 환경에서도 고려할 수 있는 제품 포지셔닝입니다.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="chip-row">
+          <span class="chip"><i class="fa-solid fa-location-dot"></i> auditoriums</span>
+          <span class="chip"><i class="fa-solid fa-futbol"></i> sports</span>
+          <span class="chip"><i class="fa-solid fa-microphone-lines"></i> concerts</span>
+          <span class="chip"><i class="fa-solid fa-church"></i> houses of worship</span>
+          <span class="chip"><i class="fa-solid fa-building"></i> corporate conferences</span>
+          <span class="chip"><i class="fa-solid fa-cloud-bolt"></i> outdoor events</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="page" data-page="page 07 specification and close">
+      <div class="page-shell page-block">
+        <div class="section-head">
+          <div>
+            <h2>Specification</h2>
+            <p>마지막 페이지는 핵심 스펙과 마무리 메시지를 한 화면에 담아, 카탈로그를 닫는 순간까지 제품 인상을 유지하도록 구성했습니다.</p>
+          </div>
+        </div>
+
+        <div class="spec-card">
+          <h3>Core Specifications</h3>
+          <div class="spec-rows">
+            <div class="spec-row">
+              <strong>Image Sensor</strong>
+              <span>1/1.8" STARVIS 2 CMOS sensor</span>
+            </div>
+            <div class="spec-row">
+              <strong>Zoom</strong>
+              <span>25X Optical Zoom, 16X Digital Zoom</span>
+            </div>
+            <div class="spec-row">
+              <strong>Field of View</strong>
+              <span>59.2° (W) to 2.5° (T)</span>
+            </div>
+            <div class="spec-row">
+              <strong>Low Light</strong>
+              <span>0.5Lux (F1.61, AGC ON)</span>
+            </div>
+            <div class="spec-row">
+              <strong>Motion</strong>
+              <span>Pan and tilt up to 300°/s, 270° roll axis</span>
+            </div>
+            <div class="spec-row">
+              <strong>General</strong>
+              <span>IP65, -40°C to +60°C, PoE++, Micro SD recording</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="closing-grid">
+          <article class="closing-banner">
+            <div>
+              <h2>Go Where the Story Happens</h2>
+              <p>
+                Range는 이동과 설치가 잦은 제작 환경을 위해 태어난 PTZ 카메라입니다.
+                한 대로 더 많은 상황에 대응하고, 한 페이지로 제품의 성격을 명확하게 전달할 수 있도록 이 카탈로그를 구성했습니다.
+              </p>
+              <div class="brand-block">
+                <div class="brand-mark" aria-hidden="true"></div>
+                <div>
+                  <strong style="display:block; font-size:1rem;">SODA MEDIA</strong>
+                  <span style="color: var(--muted); font-size:0.88rem;">Professional video equipment catalog</span>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="contact-block">
+            <div class="contact-item">
+              <strong>Key Highlights</strong>
+              <span>4K60, 25X Optical Zoom, 12G-SDI, HDMI 2.0, USB-C, IP65, 270° Roll Axis, PoE++.</span>
+            </div>
+            <div class="contact-item">
+              <strong>Target Use</strong>
+              <span>스튜디오, 경기장, 교육, 예배, 콘퍼런스, 투어링, 원격 제작, 실외 설치형 운영.</span>
+            </div>
+            <div class="contact-item">
+              <strong>Catalog Direction</strong>
+              <span>표지 1장, 제품 리스트 1장, 제품 상세 페이지, 스펙, 마무리 페이지까지 일관된 흐름을 유지합니다.</span>
+            </div>
+            <div class="contact-item">
+              <strong>Next Step</strong>
+              <span>원하시면 다음 작업에서 페이지별 텍스트를 더 짧게 다듬거나, 실제 인쇄용 A4/세로 비율로 재배치할 수 있습니다.</span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+    <div class="footer-space"></div>
+  </main>
+</body>
+</html>
