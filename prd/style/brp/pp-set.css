@@ -2,6 +2,22 @@
 /* CSS Document */
 /* General Styles 한글 */ 
 
+.pp-qst h2{
+  font-size: calc(0.75rem + 0.25vw);
+}
+.pp-qst{
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(49%, 1fr));
+width: 100%;
+gap: 1rem;
+color: #ccc;
+font-size: 1rem;
+}
+.pp-qst > li{
+gap: 0.25rem;
+display:flex;
+flex-direction: column;
+}
 
 .pp-list{
 display: grid;
