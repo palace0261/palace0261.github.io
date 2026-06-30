@@ -2,6 +2,77 @@
 /* CSS Document */
 /* General Styles 한글 */ 
 
+#sh-gg > div > div span{
+  border-bottom-left-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+  padding: 1rem 0;
+  margin-bottom: -2rem;
+  font-weight: bold;
+}
+
+#sh-wq{
+  position: relative;  
+}
+
+#sh-wq > div > img + div{
+  color:#ffffff;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+#sh-wq > div > img + div h2{
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  transform: translate(-50%, -50%);
+  /* font-size: 3rem; */
+  width: 100%;
+}
+
+#sh-wq > div > img + div span{
+  position: absolute;
+  left: 50%;
+  top: 80%;
+  transform: translate(-50%, -50%);
+}
+
+
+/* ---- */
+
+#sh-aq{
+  position: relative;  
+}
+
+#sh-aq > div > img + div{
+  color:#ffffff;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+#sh-aq > div > img + div h2{
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  transform: translate(-50%, -50%);
+}
+
+#sh-aq > div > img + div span{
+  position: absolute;
+  left: 50%;
+  top: 80%;
+  transform: translate(-50%, -50%);
+}
+
+#pp-edu{
+  position: relative;
+  top: -4rem;
+  background: #010101;
+  border-radius: 1rem;
+  padding: 2rem 2rem;
+  text-align: left;
+}
 .qx-c{
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -35,13 +106,6 @@
   width: 60%;
 }
 
-#sh-gg > div > div span{
-  border-bottom-left-radius: 1rem;
-  border-bottom-right-radius: 1rem;
-  padding: 1rem 0;
-  margin-bottom: -2rem;
-  font-weight: bold;
-}
 .ad_s > div > img + div{
   color:#ccc;
   width: 100%;
@@ -60,11 +124,16 @@
           display: flex;
           flex-direction: column;
         }
-
+        .pkg-price-card span{
+          text-align: left;
+        }
         .pkg-price-card h3 {
           margin: 0 0 0.85rem;
           font-size: 2.5rem;
           font-weight: 700;
+          color: #f1f1f1;
+        }
+        .pkg-price-card{
           color: #f1f1f1;
         }
 
@@ -86,6 +155,12 @@
         .pkg-price-list li:last-child {
           border-bottom: 0;
           padding-bottom: 0;
+        }
+
+        .pkg-price-label strong {
+          font-weight: 500;
+          color: #02c47f;
+
         }
 
         .pkg-price-label {
@@ -134,6 +209,11 @@
 .pp-wst > li > img{/* scale:0.5; */width: 40%;margin: 0 auto;}
 .pp-wst > li > span{font-size: 1.5rem;font-weight: bold;color: #f1f1f1;}
 
+.pp-mst{display: grid;grid-template-columns: repeat(auto-fit, minmax(23%, 1fr));width: 100%;gap: 1rem;color: #ccc;font-size: 1rem;}
+.pp-mst > li{gap: 0.5rem;display:flex;flex-direction: column;border: 1px solid #333333;border-radius: 1rem;padding: 2rem 1rem 2rem;}
+.pp-mst > li > img{/* scale:0.5; */width: 60%;margin: 0 auto;}
+.pp-mst > li > span{font-size: 1.25rem;font-weight: bold;color: #f1f1f1;}
+
 .pp-qst h2{
   font-size: calc(0.75rem + 0.25vw);
 }
@@ -156,13 +236,22 @@ flex-direction: column;
     right: 0;
     bottom: 0;
     left: 0;
-    background-color: rgb(0 0 0 / 5%);
+    /* background-color: rgb(255 255 255 / 5%); */
     content: "";
     border-radius: 0.5rem;
 }
 
+.pp-list div + span + span{
+  color:#000;
+  display: flex;
+  gap: 1rem;
+  flex-direction: column;
+  padding-top: 0.5rem;
+  border-top: 1px dotted #ccc;
+  font-size: 1.0rem;
+}
 .pp-list{display: grid;grid-template-columns: repeat(auto-fit, minmax(22%, 1fr));width: 100%;gap: 1.5rem;color: #ccc;font-size: 1.25rem;}
-.pp-list > li{gap: 0.25rem;display:flex;flex-direction: column;background: #f2f2f2;color: #ccc;/* border: 2px solid #bb02ff; */padding: 2rem 1rem;border-radius: 0.5rem;}
+.pp-list > li{gap: 0.25rem;display:flex;flex-direction: column;background: #ffffff;color: #ccc;/* border: 2px solid #bb02ff; */padding: 1rem;border-radius: 0.5rem;border: 2px solid #2388ff;}
 
 .pp-px{
 display: flex;
@@ -179,7 +268,7 @@ width: 100%;
 gap: 1rem;
 font-size: 1rem;
 }
-.pp-px > ul > li{gap: 0.25rem;display:flex;flex-direction: column;border: 1px solid;background: #494949;color: #ffffff;border-radius: 1rem;justify-content: center;align-items: center;padding: 1rem;}
+.pp-px > ul > li{gap: 0.25rem;display:flex;flex-direction: column;border: 1px solid;background: #ffffff;color: #000000;border-radius: 1rem;justify-content: center;align-items: center;padding: 1rem;}
 
 
 .st_logo{
@@ -323,7 +412,7 @@ padding-bottom: 1rem;
 /* background-color: #fafafa; */
 }
 .bbase > section:nth-of-type(even){
-background: #333;
+background: #000;
 }
 .bbase > section:nth-of-type(odd){
 background: #111;
