@@ -461,10 +461,16 @@ picture img{
 }
 
 @media screen and (max-width: 1024px) {
+  .qx-c{
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .qx-c > div:first-of-type{
+    display: none;
+  }
   .sv_d_ul{
     grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   }
-
   .mix-panel{
     padding: 1rem;
   }
