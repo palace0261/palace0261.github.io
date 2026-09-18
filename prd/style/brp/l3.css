@@ -25,7 +25,7 @@ picture img{
 #qwe .sv_d{
   width: 100%;
   max-width:1000px;
-  /* padding: 1rem; */
+  padding: 1rem;
 }
 
 #qwe .sv_d img{
@@ -72,8 +72,13 @@ picture img{
 
 
 
+.sv_sc{
+  width: 100%;
+}
+
 .sv_prd{
   position:relative;
+  width: 100%;
 }
 
 .qx-c{
@@ -188,12 +193,6 @@ picture img{
   padding: 3rem 0;
 }
 
-@media screen and (max-width: 1024px) {
-  .sv_d_ul{
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-  }
-}
-
 .la-qat {
   display: flex;
   flex-direction: column;
@@ -258,13 +257,6 @@ picture img{
   border-left: 0.45rem solid transparent;
   border-right: 0.45rem solid transparent;
   border-top: 0.6rem solid #ffffff;
-}
-
-
-
-@media screen and (max-width: 1024px) {
-  .pkg-price-label{
-  }
 }
 
 /* 오디오 믹서 채널 스트립 (ss14-a/b.png 재현) */
@@ -372,18 +364,6 @@ picture img{
   transform: translate(-50%, 50%);
 }
 
-@media screen and (max-width: 1024px) {
-  .mix-panel{
-    padding: 1rem;
-  }
-  .mix-ch{
-    gap: 0.7rem;
-  }
-  .mix-ch-item{
-    width: 6.2rem;
-  }
-}
-
 /* Specifications 표 (517번 라인 사양표) */
 .spec-wrap{
   display: flex;
@@ -480,7 +460,20 @@ picture img{
   font-family: 'Roboto Mono', 'Consolas', monospace;
 }
 
-@media screen and (max-width: 640px) {
+@media screen and (max-width: 1024px) {
+  .sv_d_ul{
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+
+  .mix-panel{
+    padding: 1rem;
+  }
+  .mix-ch{
+    gap: 0.7rem;
+  }
+  .mix-ch-item{
+    width: 6.2rem;
+  }
   .spec-table,
   .spec-table tbody,
   .spec-table tr,
