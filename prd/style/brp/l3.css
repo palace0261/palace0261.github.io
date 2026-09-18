@@ -22,6 +22,14 @@ picture img{
   align-items: center;
 }
 
+#qwe #cont{
+  background-color: #ebebeb;
+}
+
+#qwe .sv_logo img{
+  max-width:200px;
+}
+
 #qwe .sv_d{
   width: 100%;
   max-width:1000px;
