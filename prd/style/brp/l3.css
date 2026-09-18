@@ -130,6 +130,8 @@ picture img{
   color: #1b1b1b;
   font-weight: 800;
   letter-spacing: 0.05rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .sv_d > span{
