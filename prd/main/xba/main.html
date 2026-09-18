@@ -28,25 +28,27 @@
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     justify-items: center;
+    position: relative;
+    z-index: 11;
   }
   section > div:nth-of-type(2) > ul:nth-of-type(2) > li,
   section > div:nth-of-type(2) > ul:nth-of-type(3) > li{
     padding-top: 1rem;
     height: 38%;
   }
-  section > div:nth-of-type(2) > ul:nth-of-type(2) > li:nth-of-type(6){
+  section > div:nth-of-type(2) > ul:nth-of-type(2) > li:nth-of-type(4){
     border-top-left-radius: 1rem;
     border-bottom-left-radius: 1rem;
   }
-  section > div:nth-of-type(2) > ul:nth-of-type(3) > li:nth-of-type(5){
+  section > div:nth-of-type(2) > ul:nth-of-type(3) > li:nth-of-type(1){
     border-top-right-radius: 1rem;
     border-bottom-right-radius: 1rem;
   }
-  section > div:nth-of-type(2) > ul:nth-of-type(2) > li:nth-of-type(-n+3){
-    color: #00000000;
+  section > div:nth-of-type(2) > ul:nth-of-type(2) > li:nth-of-type(-n+2){
+    color: #fff;
   }
-  section > div:nth-of-type(2) > ul:nth-of-type(2) > li:nth-of-type(n+6),
-  section > div:nth-of-type(2) > ul:nth-of-type(3) > li:nth-of-type(-n+5){
+  section > div:nth-of-type(2) > ul:nth-of-type(2) > li:nth-of-type(n+4),
+  section > div:nth-of-type(2) > ul:nth-of-type(3) > li:nth-of-type(-n+1){
     color: #ff2525;
     background-color: #fff0c9;
   }
@@ -54,9 +56,9 @@
 <body>
 
   <div style="padding: 1rem; margin: 0rem; max-width: 600px;">
-  <section style="background-color: #7cad8d; max-width: 600px;">
+  <section style="background-color: #2e414f; max-width: 600px;">
   <div>
-    <img src="123g.jpg" width="100%;">
+    <img src="a113.png" width="100%;">
   </div>
   <div style="display: flex; gap: 1rem;flex-wrap: wrap;flex-direction: column; padding: 0rem 0 2rem">
 
@@ -71,10 +73,8 @@
     </ul>
 
     <ul>
-      <li>0</li>
-      <li>0</li>
-      <li>0</li>
-      <li>1</li>
+      <li style="color: #ff2525;">20</li>
+      <li>21</li>
       <li style="
     display: flex;
     flex-direction: column;
@@ -93,16 +93,10 @@
     align-items: center;
     position: absolute;
     top: 0rem;
-">2
+">22
 </span>
-        <p>발송마감</p>
-      </li>
-      <li>3</li>
-      <li>4</li>
-    </ul>
-
-    <ul>
-      <li>5</li>
+        <p>발송마감</p></li>
+      <li>23</li>
       <li style="
     display: flex;
     flex-direction: column;
@@ -121,13 +115,16 @@
     align-items: center;
     position: absolute;
     top: 0rem;
-">6
+">24
 </span>
-        <p style="color: #fff;">추석연휴</p>
+        <p style="color: #fff;">추석 연휴</p>
       </li>
-      <li>7</li>
-      <li>8</li>
-      <li>9</li>
+      <li>25</li>
+      <li>26</li>
+    </ul>
+
+    <ul>
+      <li>27</li>
       <li style="
     display: flex;
     flex-direction: column;
@@ -146,16 +143,30 @@
     align-items: center;
     position: absolute;
     top: 0rem;
-">10
+">28
 </span>
         <p>순차출고</p>
       </li>
-      <li>11</li>
+      <li></li>
+      <li></li>
+      <li></li>
+      <li></li>
+      <li></li>
     </ul>
 
+    <img src="b3.png" width="100%;" style="
+    position: absolute;
+    /* width: stretch; */
+    scale: 0.3;
+    top: 1rem;
+    left: -40rem;
+    top: 3rem;
+    z-index: 9;
+    opacity: 0.5;
+">
   </div>
   <div style="text-align: center; padding-bottom: 2rem;">
-    <span style="color: #f7f7f7;">즐거운 추석 연휴 보내세요.</span>
+    <span style="color: #f7f7f7;z-index: 3;display: flex;text-align: center;margin: 0 auto;justify-content: center;position: relative;background: #111;border: 1px solid;padding: 1rem; z-index: 19;">즐거운 추석 연휴 보내세요.</span>
   </div>
   </section>
   <div>

@@ -1,0 +1,385 @@
+@charset "utf-8";
+/* CSS Document */
+/* General Styles 한글 */ 
+
+header{
+  background-color: #000;
+  color: #ccc;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+picture img{
+  width: 100%;
+  object-fit: scale-down;
+}
+
+#qwe{
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+  gap: 4rem;
+  align-items: center;
+}
+
+#qwe .sv_d{
+  width: 100%;
+  max-width:1000px;
+  padding: 1rem;
+}
+
+#qwe .sv_d img{
+  border-radius: 0.9rem;
+}
+
+#sv_subtitle{
+  position: absolute;
+  color: #ccc;
+  transform: translate(-50%, -50%);
+  top: 90%;
+  left: 50%;
+  text-align: center;
+  font-size: clamp(0.75rem, 1.5vw + 0.5rem, 1rem);
+}
+
+#sv_title{
+  position: absolute;
+  color: #f1f1f1;
+  transform: translate(-50%, -50%);
+  top: 20%;
+  left: 50%;
+  text-align: center;
+  width: 97%;
+  /* background: #000000a8; */
+  /* padding: 2rem 0; */
+}
+
+#sv_title h3{
+  font-size: clamp(2rem, 5vw + 2rem, 4.5rem);
+  color: #c2b5ff;
+}
+#sv_title span:first-of-type{
+  font-size: clamp(1.25rem, 3.5vw + 1rem, 2.5rem);
+  /* font-weight: lighter; */
+  font-style: italic;
+}
+#sv_title span:last-of-type{
+  font-size: clamp(0.9rem, 2vw + 0.6rem, 1.25rem);
+  /* color: #ccc; */
+  font-weight: normal;
+  display: none;
+}
+
+
+
+.sv_prd{
+  position:relative;
+}
+
+.qx-c{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  border-top: 1px solid #353535;
+  border-bottom: 1px solid #353535;
+  padding: 3rem 0rem;
+}
+.qx-c > div + div > li > span:first-of-type{
+  font-weight:bold;
+  color: #111;
+}
+.qx-c > div + div > li > span{
+  color: #1b1b1b;
+}
+.qx-c > div + div{
+  display:flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 1rem;
+  justify-content: center;
+}
+.qx-c > div > div{
+  padding:2rem;
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.qx-c > div > div img{
+  width: 60%;
+}
+
+.ad_s > div > img + div{
+  color:#ccc;
+  width: 100%;
+  flex-direction: column;
+  position: relative;
+  top: -3rem;
+}
+
+
+
+
+.sv_d h2{
+  font-size: clamp(1.5rem, 3vw + 2rem, 3.5rem);
+  color: #1b1b1b;
+  font-weight: 800;
+  letter-spacing: 0.05rem;
+}
+
+.sv_d > span{
+  display: block;
+  color: #555;
+  margin-top: 0.4rem;
+  margin-bottom: 1.75rem;
+  font-size: clamp(1rem, 0.5vw + 0.875rem, 1.125rem);
+}
+
+.sv_ul{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+}
+
+.sv_d_ul{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+.sv_d_ul > li{
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  border-radius: 0.9rem;
+  background-image: linear-gradient(135deg, #10131f 0%, #0b3d6e 100%);
+  border: 1px solid #2c3a52;
+  color: #eef1f6;
+  font-size: 0.95rem;
+  font-weight: 600;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+}
+
+
+.sv_d_ul > li > i{
+  font-size: 1.6rem;
+  color: #2f8bff;
+  background: rgba(47, 139, 255, 0.12);
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.sv_d_ul > li svg{  
+  font-size:2rem;
+}
+
+.sv_logo{
+  background: #16181f;
+  padding: 3rem 0;
+}
+
+@media screen and (max-width: 1024px) {
+  .sv_d_ul{
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  }
+}
+
+.la-qat {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.la-qat > li {
+  list-style: none;
+  padding: 1.25rem 1.25rem 1.5rem;
+  box-shadow: 0 10px 22px rgba(22, 40, 66, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  text-align: left;
+}
+
+.la-qat > li > span,
+.la-qat > li > p {
+  position: relative;
+  display: inline-block;
+  width: fit-content;
+  max-width: min(100%, 52rem);
+  padding: 0.85rem 1rem;
+  border-radius: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.la-qat > li > span {
+  background: #0f4ea7;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.la-qat > li > span::after {
+  content: "";
+  position: absolute;
+  left: 1.2rem;
+  bottom: -0.55rem;
+  width: 0;
+  height: 0;
+  border-left: 0.45rem solid transparent;
+  border-right: 0.45rem solid transparent;
+  border-top: 0.6rem solid #0f4ea7;
+}
+
+.la-qat > li > p {
+  align-self: flex-end;
+  background: #ffffff;
+  color: #243043;
+  border: 1px solid #d9e1ee;
+}
+
+.la-qat > li > p::after {
+  content: "";
+  position: absolute;
+  right: 1.2rem;
+  bottom: -0.55rem;
+  width: 0;
+  height: 0;
+  border-left: 0.45rem solid transparent;
+  border-right: 0.45rem solid transparent;
+  border-top: 0.6rem solid #ffffff;
+}
+
+
+
+@media screen and (max-width: 1024px) {
+  .pkg-price-label{
+  }
+}
+
+/* 오디오 믹서 채널 스트립 (ss14-a/b.png 재현) */
+.mix-panel{
+  background: #16181f;
+  border: 1px solid #2a2d38;
+  border-radius: 0.9rem;
+  padding: 1.5rem;
+}
+
+.mix-ch{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  list-style: none;
+}
+
+.mix-ch-item{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 7rem;
+  padding: 0.9rem 0.7rem 1.1rem;
+  background: #23252f;
+  border: 1px solid #383b47;
+  border-radius: 0.6rem;
+}
+
+.mix-ch-item.is-active{
+  border-color: #34d980;
+  box-shadow: 0 0 0 1px rgba(52, 217, 128, 0.35);
+}
+
+.mix-ch-name{
+  color: #eef1f6;
+  font-weight: 700;
+  font-size: 0.85rem;
+  align-self: flex-start;
+}
+
+.mix-ch-btns{
+  display: flex;
+  width: 100%;
+  gap: 0.35rem;
+}
+
+.mix-btn{
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.3rem;
+  border-radius: 0.35rem;
+  background: #33363f;
+  color: #cfd3dc;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border: 1px solid #40434e;
+}
+
+.mix-btn.is-on{
+  background: #34d980;
+  color: #0c1a12;
+  border-color: #34d980;
+}
+
+.mix-btn-mute,
+.mix-db{
+  width: 100%;
+}
+
+.mix-fader{
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem 0;
+}
+
+.mix-fader-track{
+  position: relative;
+  width: 0.3rem;
+  height: 5rem;
+  background: #40434e;
+  border-radius: 0.2rem;
+}
+
+.mix-fader-fill{
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #34d980;
+  border-radius: 0.2rem;
+}
+
+.mix-fader-thumb{
+  position: absolute;
+  left: 50%;
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 50%;
+  background: #34d980;
+  box-shadow: 0 0 0 3px #16181f, 0 0 0 4px #34d980;
+  transform: translate(-50%, 50%);
+}
+
+@media screen and (max-width: 1024px) {
+  .mix-panel{
+    padding: 1rem;
+  }
+  .mix-ch{
+    gap: 0.7rem;
+  }
+  .mix-ch-item{
+    width: 6.2rem;
+  }
+}
